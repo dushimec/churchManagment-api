@@ -1,0 +1,93 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+yarn-debug.log
+.pnpm-debug.log
+
+# Build output
+/dist
+/build
+/out
+/coverage
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+.env.staging
+*.env.*
+
+# Logs
+*.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Editor directories and files
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*.DS_Store
+.DS_Store?
+
+# TypeScript
+*.tsbuildinfo
+.next
+out-tsc
+
+# Prisma
+# Add only if you're storing generated Prisma Client (not recommended)
+# prisma/generated/
+
+# Local development
+localhost.key
+localhost.cert
+
+# Testing
+coverage/
+.nyc_output
+
+# OS & Editor files
+Thumbs.db
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+*.tmproj
+*.esproj
+*.atom/*
+
+# Firebase service account (if used)
+src/config/firebase-service-account.json
+
+# Optional: if you generate certificates or uploads locally
+src/public/uploads
+src/assets
+
+# Development tools
+.nodemon
+.nodemon.json
+tsconfig.build.json
+
+# Logs captured
+logs/
+*.log
+
+# IDE
+.happypack/
+.tern-port
+info.log

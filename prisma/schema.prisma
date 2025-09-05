@@ -1,0 +1,415 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  MEMBER
+  PASTOR
+  ADMIN
+  CHOIR_LEADER
+  TREASURER
+}
+
+enum Language {
+  EN
+  FR
+}
+
+enum MembershipStatus {
+  NEW
+  BAPTIZED
+  CONFIRMED
+  ACTIVE
+  INACTIVE
+}
+
+enum ServiceType {
+  SUNDAY_SERVICE
+  BIBLE_STUDY
+  CHOIR_PRACTICE
+  PRAYER_MEETING
+  OTHER
+}
+
+enum EventType {
+  WEDDING
+  BAPTISM
+  CONFERENCE
+  RETREAT
+  SEMINAR
+  OTHER
+}
+
+enum ContributionType {
+  TITHE
+  OFFERING
+  DONATION
+  PLEDGE
+}
+
+enum PaymentMethod {
+  MOBILE_MONEY
+  CREDIT_CARD
+  BANK_TRANSFER
+  CASH
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// Main Models
+
+model User {
+  id                String           @id @default(cuid())
+  email             String           @unique
+  phone             String?          @unique
+  password          String // hashed with bcrypt
+  firstName         String
+  lastName          String
+  role              Role             @default(MEMBER)
+  language                           Language           @default(EN)
+  avatarUrl         String?
+  isVerified        Boolean          @default(false)
+  verificationToken String?
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  lastLogin         DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  status            MembershipStatus @default(NEW)
+
+  // Relations
+  profile  Member? @relation("UserProfile")
+  memberId String?
+
+  // Notifications
+  notifications Notification[]
+
+  // Messages
+  sentMessages     Message[] @relation("Sender")
+  receivedMessages Message[] @relation("Receiver")
+
+  // Prayer Requests
+  prayerRequestsAsMember PrayerRequest[] @relation("PrayerRequestMember")
+  prayerRequestsAsPastor PrayerRequest[] @relation("PrayerRequestPastor")
+
+  // Counseling Appointments
+  counselingAppointmentsAsMember CounselingAppointment[] @relation("CounselingAppointmentMember")
+  counselingAppointmentsAsPastor CounselingAppointment[] @relation("CounselingAppointmentPastor")
+
+  // Services (as preacher, usher, choir leader)
+  servicesLed      Service[] @relation("Preacher")
+  servicesUshered  Service[] @relation("Ushers")
+  choirServicesLed Service[] @relation("ChoirLeader")
+
+  // Requests
+  marriageRequests      MarriageRequest[]   @relation("MarriageRequester")
+  marriageApproved      MarriageRequest[]   @relation("MarriageApprover")
+  baptismRequests       BaptismRequest[]    @relation("BaptismRequester")
+  baptismApproved       BaptismRequest[]    @relation("BaptismApprover")
+  contributions         Contribution[]      @relation("MemberContributions")
+  verifiedContributions Contribution[]      @relation("Verifier")
+  Attendance            Attendance[]
+  Sermon                Sermon[]
+  Event                 Event[]
+  EventRegistration     EventRegistration[]
+  Media                 Media[]
+
+  @@map("users")
+}
+
+model Member {
+  id                    String         @id @default(cuid())
+  user                  User           @relation("UserProfile", fields: [userId], references: [id])
+  userId                String         @unique
+  dateOfBirth           DateTime?
+  gender                String?
+  maritalStatus         String?
+  nationality           String?
+  occupation            String?
+  address               String?
+  baptismDate           DateTime?
+  confirmationDate      DateTime?
+  dateJoined            DateTime       @default(now())
+  spouseName            String?
+  spousePhone           String?
+  numberOfChildren      Int?
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  spiritualMaturity     String?
+  ministryPreferences   String[] // e.g. ["choir", "ushering", "teaching"]
+  familyMembers         FamilyMember[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@map("members")
+}
+
+model FamilyMember {
+  id           String    @id @default(cuid())
+  member       Member    @relation(fields: [memberId], references: [id])
+  memberId     String
+  name         String
+  relationship String // e.g. Child, Spouse, Parent
+  dateOfBirth  DateTime?
+  isMember     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  @@map("family_members")
+}
+
+model Service {
+  id              String       @id @default(cuid())
+  title           String
+  description     String?
+  serviceType     ServiceType
+  date            DateTime
+  location        String
+  preacher        User?        @relation("Preacher", fields: [preacherId], references: [id])
+  preacherId      String?      @unique
+  ushers          User[]       @relation("Ushers")
+  choirLeader     User?        @relation("ChoirLeader", fields: [choirLeaderId], references: [id])
+  choirLeaderId   String?      @unique
+  startTime       DateTime
+  endTime         DateTime
+  attendanceCount Int          @default(0)
+  attendance      Attendance[]
+  sermon          Sermon?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@map("services")
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  service   Service  @relation(fields: [serviceId], references: [id])
+  serviceId String
+  member    User     @relation(fields: [memberId], references: [id])
+  memberId  String
+  method    String // "manual" or "qr_code"
+  timestamp DateTime @default(now())
+
+  @@unique([serviceId, memberId])
+  @@map("attendance")
+}
+
+model Sermon {
+  id         String   @id @default(cuid())
+  title      String
+  preacher   User     @relation(fields: [preacherId], references: [id])
+  preacherId String
+  service    Service? @relation(fields: [serviceId], references: [id])
+  serviceId  String?  @unique
+  date       DateTime @default(now())
+  theme      String?
+  scripture  String?
+  audioUrl   String?
+  videoUrl   String?
+  text       String?
+  tags       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  Media      Media[]
+
+  @@map("sermons")
+}
+
+model Event {
+  id              String              @id @default(cuid())
+  title           String
+  eventType       EventType
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  location        String
+  maxParticipants Int?
+  organizer       User                @relation(fields: [organizerId], references: [id])
+  organizerId     String
+  status          RequestStatus       @default(PENDING)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  registrations   EventRegistration[]
+  notifications   Notification[]
+  MarriageRequest MarriageRequest[]
+  BaptismRequest  BaptismRequest[]
+  Media           Media[]
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id           String        @id @default(cuid())
+  event        Event         @relation(fields: [eventId], references: [id])
+  eventId      String
+  member       User          @relation(fields: [memberId], references: [id])
+  memberId     String
+  registeredAt DateTime      @default(now())
+  status       RequestStatus @default(PENDING)
+
+  @@unique([eventId, memberId])
+  @@map("event_registrations")
+}
+
+model MarriageRequest {
+  id                 String        @id @default(cuid())
+  brideName          String
+  groomName          String
+  bridePhone         String
+  groomPhone         String
+  brideEmail         String?
+  groomEmail         String?
+  weddingDate        DateTime
+  location           String?
+  witness1Name       String
+  witness1Phone      String
+  witness2Name       String
+  witness2Phone      String
+  documentsSubmitted String[] // e.g., ID, Baptism cert
+  requester          User          @relation("MarriageRequester", fields: [requesterId], references: [id])
+  requesterId        String
+  status             RequestStatus @default(PENDING)
+  approvedBy         User?         @relation("MarriageApprover", fields: [approvedById], references: [id])
+  approvedById       String?
+  approvedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  event              Event?        @relation(fields: [eventId], references: [id]) // Linked event if approved
+  eventId            String?
+
+  @@map("marriage_requests")
+}
+
+model BaptismRequest {
+  id             String        @id @default(cuid())
+  childName      String
+  dateOfBirth    DateTime
+  parent1Name    String
+  parent1Phone   String
+  parent1Email   String?
+  parent2Name    String?
+  parent2Phone   String?
+  parent2Email   String?
+  pastorNotes    String?
+  requester      User          @relation("BaptismRequester", fields: [requesterId], references: [id])
+  requesterId    String
+  status         RequestStatus @default(PENDING)
+  approvedBy     User?         @relation("BaptismApprover", fields: [approvedById], references: [id])
+  approvedById   String?
+  approvedAt     DateTime?
+  scheduledDate  DateTime?
+  certificateUrl String? // Generated PDF
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  event          Event?        @relation(fields: [eventId], references: [id]) // Auto-created event
+  eventId        String?
+
+  @@map("baptism_requests")
+}
+
+model Contribution {
+  id               String           @id @default(cuid())
+  member           User             @relation("MemberContributions", fields: [memberId], references: [id])
+  memberId         String
+  amount           Decimal
+  contributionType ContributionType
+  paymentMethod    PaymentMethod
+  transactionId    String           @unique
+  receiptUrl       String? // Generated receipt
+  notes            String?
+  date             DateTime         @default(now())
+  verified         Boolean          @default(false)
+  verifiedBy       User?            @relation("Verifier", fields: [verifiedById], references: [id])
+  verifiedById     String?
+  createdAt        DateTime         @default(now())
+
+  @@map("contributions")
+}
+
+model Media {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  url          String // Link to file (S3, etc.)
+  fileType     String // image, audio, video
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  uploadedById String
+  eventId      String?
+  eventIdRef   Event?   @relation(fields: [eventId], references: [id])
+  sermonId     String?
+  sermonIdRef  Sermon?  @relation(fields: [sermonId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@map("media")
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  recipient      User     @relation(fields: [recipientId], references: [id])
+  recipientId    String
+  title          String
+  message        String
+  type           String // email, sms, push
+  read           Boolean  @default(false)
+  sentAt         DateTime @default(now())
+  relatedEventId String?
+  relatedEvent   Event?   @relation(fields: [relatedEventId], references: [id])
+
+  @@map("notifications")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  sender     User     @relation("Sender", fields: [senderId], references: [id])
+  senderId   String
+  receiver   User     @relation("Receiver", fields: [receiverId], references: [id])
+  receiverId String
+  content    String
+  read       Boolean  @default(false)
+  timestamp  DateTime @default(now())
+
+  @@map("messages")
+}
+
+model PrayerRequest {
+  id          String    @id @default(cuid())
+  member      User      @relation("PrayerRequestMember", fields: [memberId], references: [id])
+  memberId    String
+  request     String
+  isPrivate   Boolean   @default(true)
+  responded   Boolean   @default(false)
+  response    String?
+  pastor      User?     @relation("PrayerRequestPastor", fields: [pastorId], references: [id])
+  pastorId    String?
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@map("prayer_requests")
+}
+
+model CounselingAppointment {
+  id        String        @id @default(cuid())
+  member    User          @relation("CounselingAppointmentMember", fields: [memberId], references: [id])
+  memberId  String
+  pastor    User          @relation("CounselingAppointmentPastor", fields: [pastorId], references: [id])
+  pastorId  String
+  date      DateTime
+  duration  Int // minutes
+  purpose   String
+  status    RequestStatus @default(PENDING)
+  notes     String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@map("counseling_appointments")
+}
