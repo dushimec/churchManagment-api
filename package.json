@@ -65,6 +65,8 @@
     "@types/passport-google-oauth20": "^2.0.16",
     "@types/passport-jwt": "^4.0.1",
     "@types/socket.io": "^3.0.1",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "@types/twilio": "^3.19.2",
     "eslint": "^9.34.0",
     "eslint-config-prettier": "^10.1.8",

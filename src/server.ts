@@ -1,3 +1,4 @@
+import "./types"
 import cors from "cors";
 import helmet from "helmet";
 import dotenv from "dotenv";
@@ -5,8 +6,11 @@ import express, { Express, Request, Response } from "express";
 import { logger } from "./utils/logger";
 import { languagePreference } from "./middlewares/languagePreference";
 import { prisma } from "./config/database";
+import swaggerRoutes from "./routes/swagger.route";
 import { initializeCronJobs } from "./config/cron";
+import mainRouter from "./routes";
 import { Server } from "socket.io";
+
 import http from "http";
 // Load environment variables
 dotenv.config();
@@ -51,7 +55,10 @@ app.use(express.urlencoded({ extended: true }));
 initializeCronJobs();
 
 // Routes
+
 app.use(languagePreference);
+app.use("/api/v1", mainRouter);
+app.use("/api-docs", swaggerRoutes);
 
 // Health check endpoint
 app.get("/health", (req: Request, res: Response) => {

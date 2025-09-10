@@ -17,6 +17,15 @@ enum Role {
   TREASURER
 }
 
+enum AssetCategory {
+  PROFILE_IMAGE
+  DOCUMENT  
+  SERMON_MEDIA
+  EVENT_PHOTO
+  OTHER        
+}
+
+
 enum Language {
   EN
   FR
@@ -61,6 +70,12 @@ enum PaymentMethod {
   CASH
 }
 
+enum AssetType {
+  IMAGE
+  DOCUMENT
+  VIDEO
+}
+
 enum RequestStatus {
   PENDING
   APPROVED
@@ -71,22 +86,30 @@ enum RequestStatus {
 
 model User {
   id                String           @id @default(cuid())
-  email             String           @unique
+  email             String           
   phone             String?          @unique
   password          String // hashed with bcrypt
   firstName         String
   lastName          String
   role              Role             @default(MEMBER)
-  language                           Language           @default(EN)
+  language          Language         @default(EN)
   avatarUrl         String?
   isVerified        Boolean          @default(false)
   verificationToken String?
+  verificationCode  Int?
+  verificationCodeExpiresAt DateTime?
+  isDeleted         Boolean          @default(false)
+  isEmailVerified   Boolean          @default(false)
   resetToken        String?
   resetTokenExpiry  DateTime?
+  profileImageId    String?          @unique
+  profileImage      Asset?  @relation("ProfileImage", fields: [profileImageId], references: [id])
+  assets            Asset[] @relation("UserAssets")
   lastLogin         DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   status            MembershipStatus @default(NEW)
+  
 
   // Relations
   profile  Member? @relation("UserProfile")
@@ -128,10 +151,22 @@ model User {
   @@map("users")
 }
 
+model Asset {
+  id                 String           @id @default(cuid())
+  url                String
+  type               AssetType
+  category           AssetCategory
+  publicId           String           @unique
+  userId             String?         
+  createdAt          DateTime         @default(now())
+  user               User?            @relation("UserAssets", fields: [userId], references: [id], onDelete: Cascade)
+  profileImageOf     User?            @relation("ProfileImage") // No need for fields/references here
+}
+
 model Member {
   id                    String         @id @default(cuid())
   user                  User           @relation("UserProfile", fields: [userId], references: [id])
-  userId                String         @unique
+  userId                String @unique
   dateOfBirth           DateTime?
   gender                String?
   maritalStatus         String?
@@ -176,10 +211,10 @@ model Service {
   date            DateTime
   location        String
   preacher        User?        @relation("Preacher", fields: [preacherId], references: [id])
-  preacherId      String?      @unique
+  preacherId      String?      
   ushers          User[]       @relation("Ushers")
   choirLeader     User?        @relation("ChoirLeader", fields: [choirLeaderId], references: [id])
-  choirLeaderId   String?      @unique
+  choirLeaderId   String?      
   startTime       DateTime
   endTime         DateTime
   attendanceCount Int          @default(0)
@@ -209,8 +244,8 @@ model Sermon {
   title      String
   preacher   User     @relation(fields: [preacherId], references: [id])
   preacherId String
+  serviceId String? @unique
   service    Service? @relation(fields: [serviceId], references: [id])
-  serviceId  String?  @unique
   date       DateTime @default(now())
   theme      String?
   scripture  String?
@@ -324,7 +359,7 @@ model Contribution {
   amount           Decimal
   contributionType ContributionType
   paymentMethod    PaymentMethod
-  transactionId    String           @unique
+  transactionId    String           
   receiptUrl       String? // Generated receipt
   notes            String?
   date             DateTime         @default(now())
