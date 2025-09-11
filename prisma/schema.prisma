@@ -8,7 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
+// Enums (unchanged)
 enum Role {
   MEMBER
   PASTOR
@@ -24,7 +24,6 @@ enum AssetCategory {
   EVENT_PHOTO
   OTHER        
 }
-
 
 enum Language {
   EN
@@ -86,8 +85,8 @@ enum RequestStatus {
 
 model User {
   id                String           @id @default(cuid())
-  email             String           
-  phone             String?          @unique
+  email             String           @unique  // ✅ Enforced unique
+  phone             String?          @unique  // ✅ Optional but unique if provided
   password          String // hashed with bcrypt
   firstName         String
   lastName          String
@@ -109,7 +108,10 @@ model User {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
   status            MembershipStatus @default(NEW)
+  is2FAEnabled              Boolean          @default(false)
+  phoneVerified             Boolean          @default(false)
   
+  currentRefreshTokenVersion Int             @default(0)
 
   // Relations
   profile  Member? @relation("UserProfile")
@@ -136,17 +138,20 @@ model User {
   choirServicesLed Service[] @relation("ChoirLeader")
 
   // Requests
-  marriageRequests      MarriageRequest[]   @relation("MarriageRequester")
-  marriageApproved      MarriageRequest[]   @relation("MarriageApprover")
-  baptismRequests       BaptismRequest[]    @relation("BaptismRequester")
-  baptismApproved       BaptismRequest[]    @relation("BaptismApprover")
-  contributions         Contribution[]      @relation("MemberContributions")
-  verifiedContributions Contribution[]      @relation("Verifier")
-  Attendance            Attendance[]
-  Sermon                Sermon[]
-  Event                 Event[]
-  EventRegistration     EventRegistration[]
-  Media                 Media[]
+  marriageRequestsAsBride   MarriageRequest[] @relation("Bride")
+  marriageRequestsAsGroom   MarriageRequest[] @relation("Groom")
+  marriageRequests          MarriageRequest[] @relation("MarriageRequester")
+  marriageApproved          MarriageRequest[] @relation("MarriageApprover")
+  baptismRequests           BaptismRequest[]  @relation("BaptismRequester")
+  baptismApproved           BaptismRequest[]  @relation("BaptismApprover")
+  contributions             Contribution[]    @relation("MemberContributions")
+  verifiedContributions     Contribution[]    @relation("Verifier")
+  Attendance                Attendance[]
+  Sermon                    Sermon[]
+  Event                     Event[]
+  EventRegistration         EventRegistration[]
+  Media                     Media[]
+  loginActivities LoginActivity[]
 
   @@map("users")
 }
@@ -160,20 +165,20 @@ model Asset {
   userId             String?         
   createdAt          DateTime         @default(now())
   user               User?            @relation("UserAssets", fields: [userId], references: [id], onDelete: Cascade)
-  profileImageOf     User?            @relation("ProfileImage") // No need for fields/references here
+  profileImageOf     User?            @relation("ProfileImage")
 }
 
 model Member {
   id                    String         @id @default(cuid())
   user                  User           @relation("UserProfile", fields: [userId], references: [id])
-  userId                String @unique
+  userId                String         @unique
   dateOfBirth           DateTime?
   gender                String?
   maritalStatus         String?
   nationality           String?
   occupation            String?
   address               String?
-  baptismDate           DateTime?
+  baptismDate           DateTime?      // ✅ Required for marriage validation
   confirmationDate      DateTime?
   dateJoined            DateTime       @default(now())
   spouseName            String?
@@ -182,7 +187,7 @@ model Member {
   emergencyContactName  String?
   emergencyContactPhone String?
   spiritualMaturity     String?
-  ministryPreferences   String[] // e.g. ["choir", "ushering", "teaching"]
+  ministryPreferences   String[]       // e.g. ["choir", "ushering", "teaching"]
   familyMembers         FamilyMember[]
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
@@ -195,7 +200,7 @@ model FamilyMember {
   member       Member    @relation(fields: [memberId], references: [id])
   memberId     String
   name         String
-  relationship String // e.g. Child, Spouse, Parent
+  relationship String    // e.g. Child, Spouse, Parent
   dateOfBirth  DateTime?
   isMember     Boolean   @default(false)
   createdAt    DateTime  @default(now())
@@ -232,7 +237,7 @@ model Attendance {
   serviceId String
   member    User     @relation(fields: [memberId], references: [id])
   memberId  String
-  method    String // "manual" or "qr_code"
+  method    String   // "manual" or "qr_code"
   timestamp DateTime @default(now())
 
   @@unique([serviceId, memberId])
@@ -244,7 +249,7 @@ model Sermon {
   title      String
   preacher   User     @relation(fields: [preacherId], references: [id])
   preacherId String
-  serviceId String? @unique
+  serviceId  String?  @unique
   service    Service? @relation(fields: [serviceId], references: [id])
   date       DateTime @default(now())
   theme      String?
@@ -298,19 +303,19 @@ model EventRegistration {
 
 model MarriageRequest {
   id                 String        @id @default(cuid())
-  brideName          String
-  groomName          String
-  bridePhone         String
-  groomPhone         String
-  brideEmail         String?
-  groomEmail         String?
+  bride              User          @relation("Bride", fields: [brideId], references: [id])
+  brideId            String
+  groom              User          @relation("Groom", fields: [groomId], references: [id])
+  groomId            String
   weddingDate        DateTime
   location           String?
   witness1Name       String
   witness1Phone      String
   witness2Name       String
   witness2Phone      String
-  documentsSubmitted String[] // e.g., ID, Baptism cert
+  documentsSubmitted String[]      // e.g., ID, Baptism cert
+  brideIdDocumentUrl String?       // ✅ Uploaded ID/Baptism cert for bride
+  groomIdDocumentUrl String?       // ✅ Uploaded ID/Baptism cert for groom
   requester          User          @relation("MarriageRequester", fields: [requesterId], references: [id])
   requesterId        String
   status             RequestStatus @default(PENDING)
@@ -322,6 +327,7 @@ model MarriageRequest {
   event              Event?        @relation(fields: [eventId], references: [id]) // Linked event if approved
   eventId            String?
 
+  @@index([brideId, groomId], name: "marriage_bride_groom_idx")
   @@map("marriage_requests")
 }
 
@@ -343,7 +349,7 @@ model BaptismRequest {
   approvedById   String?
   approvedAt     DateTime?
   scheduledDate  DateTime?
-  certificateUrl String? // Generated PDF
+  certificateUrl String?       // Generated PDF
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   event          Event?        @relation(fields: [eventId], references: [id]) // Auto-created event
@@ -360,7 +366,7 @@ model Contribution {
   contributionType ContributionType
   paymentMethod    PaymentMethod
   transactionId    String           
-  receiptUrl       String? // Generated receipt
+  receiptUrl       String?          // Generated receipt
   notes            String?
   date             DateTime         @default(now())
   verified         Boolean          @default(false)
@@ -375,8 +381,8 @@ model Media {
   id           String   @id @default(cuid())
   title        String
   description  String?
-  url          String // Link to file (S3, etc.)
-  fileType     String // image, audio, video
+  url          String   // Link to file (S3, etc.)
+  fileType     String   // image, audio, video
   uploadedBy   User     @relation(fields: [uploadedById], references: [id])
   uploadedById String
   eventId      String?
@@ -388,13 +394,25 @@ model Media {
   @@map("media")
 }
 
+model LoginActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  ip        String?
+  userAgent String?
+  success   Boolean
+  timestamp DateTime @default(now())
+
+  @@map("login_activities")
+}
+
 model Notification {
   id             String   @id @default(cuid())
   recipient      User     @relation(fields: [recipientId], references: [id])
   recipientId    String
   title          String
   message        String
-  type           String // email, sms, push
+  type           String   // email, sms, push
   read           Boolean  @default(false)
   sentAt         DateTime @default(now())
   relatedEventId String?
@@ -439,7 +457,7 @@ model CounselingAppointment {
   pastor    User          @relation("CounselingAppointmentPastor", fields: [pastorId], references: [id])
   pastorId  String
   date      DateTime
-  duration  Int // minutes
+  duration  Int           // minutes
   purpose   String
   status    RequestStatus @default(PENDING)
   notes     String?

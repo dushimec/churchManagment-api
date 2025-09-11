@@ -15,6 +15,9 @@ const options: swaggerJsdoc.Options = {
         name: "Authentication",
         description: "Authorizations endpoints for users",
       },
+
+      { name: "Admin", description: "Admin management endpoints" },
+      { name: "Users", description: "User management endpoints" },
       
     ],
     servers: [
@@ -37,7 +40,7 @@ const options: swaggerJsdoc.Options = {
       },
     },
   },
-  apis: ["./src/docs/**/*.ts", "./src/docs/**/*.js"],
+  apis: ["src/docs/**/*.ts", "src/docs/**/*.js"],
 };
 
 export const swaggerSpec = swaggerJsdoc(options);

@@ -4,23 +4,23 @@ import { logger } from "../utils/logger";
 
 const pindo_sender_id = process.env.PINDO_SENDER_ID || "PindoTest";
 export interface Recipient {
-  phonenumber: string;
+  phone: string;
   name: string;
 }
 
 export class SmsService {
   static async sendSmsViaPindo(
-    phoneNumber: string,
+    phone: string,
     message: string
   ): Promise<boolean> {
     try {
      await pindoSMS.sendSMS({
-        to: phoneNumber,
+        to: phone,
         text: message,
         sender: pindo_sender_id,
       });
 
-      logger.info(`SMS successfully sent to ${phoneNumber}`);
+      logger.info(`SMS successfully sent to ${phone}`);
       return true;
     } catch (error) {
       logger.error("Error sending sms", error);
@@ -28,8 +28,8 @@ export class SmsService {
     }
   }
 
-  static sendVerificationSMS = async (
-  phoneNumber: string,
+  static sendVerificationCodeSMS = async (
+  phone: string,
   verificationCode: string,
   language: Language = Language.EN
 ) => {
@@ -42,11 +42,11 @@ export class SmsService {
 
     await client.messages.create({
       body: message,
-      to: phoneNumber,
-      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phone,
+      from: process.env.TWILIO_PHONE_NUMBER as string,
     });
 
-    logger.info(`Verification SMS sent to ${phoneNumber}`);
+    logger.info(`Verification SMS sent to ${phone}`);
   } catch (error) {
     logger.error("Error sending verification SMS:", error);
     throw error;

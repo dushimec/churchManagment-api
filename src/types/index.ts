@@ -1,18 +1,16 @@
-
 import { User, Asset } from "@prisma/client";
-declare global {
-  namespace Express {
-    export interface Request {
-      user?: DbUser;
-      isEnglishPreferred?: boolean;
-     
-    }
-  }
-}
-
 export type DbUser = User & {
   profileImage?: Asset | null;
 };
+
+declare global {
+  namespace Express {
+    export interface Request {
+      user?: DbUser | null; // <-- allow null
+      isEnglishPreferred?: boolean;
+    }
+  }
+}
 
 export const fileSelects = {
   id: true,
