@@ -1,17 +1,21 @@
-// src/controllers/AuthController.ts
-
 import bcrypt from "bcryptjs";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../config/database";
 import { AppError } from "../utils/AppError";
 import { catchAsync } from "../utils/CatchAsync";
-import { Role, AssetType, AssetCategory } from "@prisma/client";
+import { Role, AssetType, AssetCategory, Language } from "@prisma/client";
 import { generateVerificationCode } from "../utils/generateVerificatinCode";
 import { matchedData } from "express-validator";
 import { generateAvatar } from "../utils/generateAvatar";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { generateToken, generateRefreshToken, verifyRefreshToken } from "../utils/jwt";
-import  {SmsService}  from "../services/sms.service";
+import { SmsService } from "../services/sms.service";
+import {
+  sendVerificationEmail,
+  sendWelcomeEmail,
+  sendPasswordResetEmail,
+  sendPasswordResetConfirmationEmail,
+} from "../config/email";
 
 export class AuthController {
   static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -62,6 +66,13 @@ export class AuthController {
           },
         });
 
+        await sendVerificationEmail(
+          email,
+          verificationCode.toString(),
+          isEN ? Language.EN : Language.FR,
+          "signup"
+        );
+
         return res.status(201).json({
           success: true,
           message: isEN
@@ -104,11 +115,19 @@ export class AuthController {
         verificationCodeExpiresAt,
         role: role || Role.MEMBER,
         currentRefreshTokenVersion: 0,
+        language: isEN ? Language.EN : Language.FR,
       },
       include: {
         profileImage: true,
       },
     });
+
+    await sendVerificationEmail(
+      email,
+      verificationCode.toString(),
+      isEN ? Language.EN : Language.FR,
+      "signup"
+    );
 
     const accessToken = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id, 0);
@@ -156,24 +175,18 @@ export class AuthController {
     if (user.isDeleted) return next(AppError("Account deactivated.", 401));
     if (!user.isEmailVerified) return next(AppError("Please verify your email first.", 403));
 
-    
     if (
       (user.role === "ADMIN" || user.role === "PASTOR") &&
       (!user.is2FAEnabled || !user.phoneVerified)
     ) {
-      
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-      
-      await SmsService.sendVerificationCodeSMS(
-        user.phone ?? "",
+      await sendVerificationEmail(
+        user.email,
         code,
-        req.isEnglishPreferred === undefined
-          ? undefined
-          : req.isEnglishPreferred
-          ? "EN"
-          : "FR"
+        user.language,
+        "login"
       );
 
       await prisma.user.update({
@@ -186,7 +199,7 @@ export class AuthController {
 
       return res.status(403).json({
         success: false,
-        message: "2FA required. Verification code sent to your phone.",
+        message: "2FA required. Verification code sent to your email.",
         require2FA: true,
       });
     }
@@ -200,11 +213,95 @@ export class AuthController {
       },
     });
 
+    if (!user.lastLogin) {
+      await sendWelcomeEmail(user.email, `${user.firstName} ${user.lastName}`, user.language);
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
+    const accessToken = generateToken(user.id);
+
+    res.status(200).json({
+      success: true,
+      accessToken,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        language: user.language,
+        avatarUrl: user.avatarUrl || user.profileImage?.url,
+        is2FAEnabled: user.is2FAEnabled,
+        phoneVerified: user.phoneVerified,
+      },
+    });
+  });
+
+  static verify2FA = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return next(AppError("Email and verification code are required.", 400));
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: { profileImage: true },
+    });
+
+    if (!user) {
+      return next(AppError("User not found.", 404));
+    }
+
+    if (!user.verificationCode || !user.verificationCodeExpiresAt) {
+      return next(AppError("No 2FA verification pending.", 400));
+    }
+
+    if (user.verificationCode !== parseInt(code)) {
+      return next(AppError("Invalid verification code.", 400));
+    }
+
+    if (new Date() > user.verificationCodeExpiresAt) {
+      return next(AppError("Verification code expired. Please log in again.", 400));
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationCode: null,
+        verificationCodeExpiresAt: null,
+      },
+    });
+
+    await prisma.loginActivity.create({
+      data: {
+        userId: user.id,
+        ip: req.ip || "unknown",
+        userAgent: req.get("User-Agent") || "unknown",
+        success: true,
+      },
+    });
+
+    if (!user.lastLogin) {
+      await sendWelcomeEmail(user.email, `${user.firstName} ${user.lastName}`, user.language);
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() },
+    });
+
     const accessToken = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id, user.currentRefreshTokenVersion);
 
     res.status(200).json({
       success: true,
+      message: "2FA verified. Login successful.",
       accessToken,
       refreshToken,
       user: {
@@ -226,7 +323,7 @@ export class AuthController {
     const { refreshToken } = req.body;
     if (!refreshToken) return next(AppError("Refresh token required.", 400));
 
-    const decoded = verifyRefreshToken(refreshToken); // ⚠️ You need to import or define this function!
+    const decoded = verifyRefreshToken(refreshToken);
     if (!decoded) return next(AppError("Invalid or expired refresh token.", 401));
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
@@ -236,6 +333,79 @@ export class AuthController {
 
     const newAccessToken = generateToken(user.id);
     res.status(200).json({ success: true, accessToken: newAccessToken });
+  });
+
+  static forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+    const user = await prisma.user.findUnique({ where: { email } });
+    
+    if (!user || user.isDeleted) {
+      return res.status(200).json({
+        success: true,
+        message: "If your email is registered, you will receive a reset link.",
+      });
+    }
+
+    const resetToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetToken, resetTokenExpiry },
+    });
+
+    await sendPasswordResetEmail(
+      user.email,
+      resetToken,
+      user.language
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email.",
+    });
+  });
+
+  static resetPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return next(AppError("Token and new password are required.", 400));
+    }
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetToken: token,
+        resetTokenExpiry: { gt: new Date() },
+        isDeleted: false,
+      },
+    });
+
+    if (!user) {
+      return next(AppError("Invalid or expired reset token.", 400));
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
+
+    await sendPasswordResetConfirmationEmail(
+      user.email,
+      `${user.firstName} ${user.lastName}`,
+      user.language
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You can now log in.",
+    });
   });
 
   static enable2FA = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -253,11 +423,7 @@ export class AuthController {
     await SmsService.sendVerificationCodeSMS(
       phone,
       code,
-      req.isEnglishPreferred === undefined
-        ? undefined
-        : req.isEnglishPreferred
-        ? "EN"
-        : "FR"
+      req.user!.language
     );
 
     await prisma.user.update({
@@ -311,14 +477,11 @@ export class AuthController {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Convert boolean to Language enum
-    const language: "EN" | "FR" | undefined =
-      req.isEnglishPreferred === undefined
-        ? undefined
-        : req.isEnglishPreferred
-        ? "EN"
-        : "FR";
-    await SmsService.sendVerificationCodeSMS(phone, code, language);
+    await SmsService.sendVerificationCodeSMS(
+      phone,
+      code,
+      req.user!.language
+    );
 
     await prisma.user.update({
       where: { id: req.user!.id },
@@ -330,49 +493,6 @@ export class AuthController {
     });
 
     res.status(200).json({ success: true, message: "Verification code sent via SMS." });
-  });
-
-  static logout = (_req: Request, res: Response) => {
-    // Client-side token deletion
-    res.status(200).json({ success: true, message: "Logged out successfully." });
-  };
-
-  static getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      include: { profile: true, profileImage: true },
-    });
-
-    if (!user) return next(AppError("User not found.", 404));
-
-    res.status(200).json({
-      success: true,
-      data: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        language: user.language,
-        avatarUrl: user.avatarUrl || user.profileImage?.url,
-        isEmailVerified: user.isEmailVerified,
-        status: user.status,
-        is2FAEnabled: user.is2FAEnabled,
-        phoneVerified: user.phoneVerified,
-        memberProfile: user.profile
-          ? {
-              id: user.profile.id,
-              dateOfBirth: user.profile.dateOfBirth,
-              gender: user.profile.gender,
-              baptismDate: user.profile.baptismDate,
-              confirmationDate: user.profile.confirmationDate,
-              dateJoined: user.profile.dateJoined,
-              ministryPreferences: user.profile.ministryPreferences,
-            }
-          : null,
-      },
-    });
   });
 
   static verifyEmail = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -399,6 +519,12 @@ export class AuthController {
         verificationCodeExpiresAt: null,
       },
     });
+
+    await sendWelcomeEmail(
+      user.email,
+      `${user.firstName} ${user.lastName}`,
+      user.language
+    );
 
     res.status(200).json({ success: true, message: "Email verified successfully." });
   });
@@ -430,4 +556,46 @@ export class AuthController {
 
     res.status(200).json({ success: true, message: "Phone number verified successfully." });
   });
+
+  static getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      include: { profile: true, profileImage: true },
+    });
+
+    if (!user) return next(AppError("User not found.", 404));
+
+    res.status(200).json({
+      success: true,
+      user: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        language: user.language,
+        avatarUrl: user.avatarUrl || user.profileImage?.url,
+        isEmailVerified: user.isEmailVerified,
+        status: user.status,
+        is2FAEnabled: user.is2FAEnabled,
+        phoneVerified: user.phoneVerified,
+        memberProfile: user.profile
+          ? {
+              id: user.profile.id,
+              dateOfBirth: user.profile.dateOfBirth,
+              gender: user.profile.gender,
+              baptismDate: user.profile.baptismDate,
+              confirmationDate: user.profile.confirmationDate,
+              dateJoined: user.profile.dateJoined,
+              ministryPreferences: user.profile.ministryPreferences,
+            }
+          : null,
+      },
+    });
+  });
+
+  static logout = (_req: Request, res: Response) => {
+    res.status(200).json({ success: true, message: "Logged out successfully." });
+  };
 }

@@ -171,6 +171,76 @@
 
 /**
  * @swagger
+ * /api/v1/auth/forgot-password:
+ *   post:
+ *     summary: Forgot password
+ *     description: Send a password reset link to the user's email.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: christian.dushime@example.com
+ *     responses:
+ *       200:
+ *         description: Password reset link sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/reset-password:
+ *   post:
+ *     summary: Reset password
+ *     description: Reset the user's password using a token.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "reset-token"
+ *               password:
+ *                 type: string
+ *                 example: "NewP@ssw0rd"
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Invalid or expired reset token
+ */
+
+/**
+ * @swagger
  * /api/v1/auth/enable-2fa:
  *   post:
  *     summary: Enable 2FA
@@ -202,6 +272,35 @@
  *   post:
  *     summary: Verify 2FA code
  *     description: Verify the code sent to enable 2FA.
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: christian.dushime@example.com
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: 2FA enabled successfully
+ *       400:
+ *         description: Invalid or expired code
+ */
+
+/**
+ * @swagger
+ * /api/v1/auth/verify-2fa-code:
+ *   post:
+ *     summary: Verify 2FA code (alternate endpoint)
+ *     description: Verify the code sent to enable 2FA (alternate endpoint).
  *     tags:
  *       - Authentication
  *     requestBody:
