@@ -1,4 +1,4 @@
-import { User, Asset } from "@prisma/client";
+import {Prisma, User, Asset } from "@prisma/client";
 export type DbUser = User & {
   profileImage?: Asset | null;
 };
@@ -20,25 +20,29 @@ export const fileSelects = {
   userId: true,
 } as const;
 
+
 export const profileSelects = {
   id: true,
-  email: true,
   firstName: true,
   lastName: true,
+  email: true,
+  phone: true,
   role: true,
-  isVerified: true,
   language: true,
+  avatarUrl: true,
+  isEmailVerified: true,
+  is2FAEnabled: true,
+  phoneVerified: true,
   status: true,
   createdAt: true,
   updatedAt: true,
-  phone: true,
-  isEmailVerified: true,
   profileImage: {
     select: {
       url: true,
+      publicId: true,
     },
   },
-} as const;
+} satisfies Prisma.UserSelect;
 
 type Point = {
   type: "Point";

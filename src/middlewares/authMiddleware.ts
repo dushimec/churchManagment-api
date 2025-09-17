@@ -1,5 +1,3 @@
-// src/middlewares/authMiddleware.ts
-
 import { Request, Response, NextFunction } from "express";
 import { prisma } from "../config/database";
 import { AppError } from "../utils/AppError";
@@ -12,6 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const verifyAccess = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log("Authorization header:", req.headers.authorization); // Add this line
     let token;
     if (
       req.headers.authorization &&
@@ -67,9 +66,9 @@ export const verifyAccess = catchAsync(
       return next(AppError("User no longer exists or is deactivated.", 401));
     }
 
-    if (decoded.version !== currentUser.currentRefreshTokenVersion) {
-      return next(AppError("Session revoked. Please log in again.", 401));
-    }
+    // if (decoded.version !== currentUser.currentRefreshTokenVersion) {
+    //   return next(AppError("Session revoked. Please log in again.", 401));
+    // }
 
     req.user = currentUser;
     req.isEnglishPreferred = currentUser.language === "EN";
