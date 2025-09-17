@@ -42,6 +42,40 @@ export const profileSelects = {
       publicId: true,
     },
   },
+  
+  profile: {
+    select: {
+      id: true,
+      dateOfBirth: true,
+      gender: true,
+      maritalStatus: true,
+      nationality: true,
+      occupation: true,
+      address: true,
+      baptismDate: true,
+      confirmationDate: true,
+      spouseName: true,
+      spousePhone: true,
+      numberOfChildren: true,
+      emergencyContactName: true,
+      emergencyContactPhone: true,
+      spiritualMaturity: true,
+      ministryPreferences: true,
+      dateJoined: true,
+      createdAt: true,
+      updatedAt: true,
+      familyMembers: {
+        select: {
+          id: true,
+          name: true,
+          relationship: true,
+          dateOfBirth: true,
+          isMember: true,
+          createdAt: true,
+        },
+      },
+    },
+  },
 } satisfies Prisma.UserSelect;
 
 type Point = {

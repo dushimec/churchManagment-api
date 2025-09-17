@@ -45,16 +45,13 @@ router
     .route("/logout")
     .post(verifyAccess, AuthController.logout);
 
-router
-    .route("/me")
-    .get(verifyAccess, AuthController.getMe);
 
 router
     .route("/verify-email")
-    .post(verifyAccess, AuthController.verifyEmail);
+    .post( AuthController.verifyEmail);
 
 router
     .route("/verify-phone")
-    .post(verifyAccess, AuthController.verifyPhone);
+    .post( AuthController.verifyPhone);
 
 export default router;

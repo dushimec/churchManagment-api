@@ -3,7 +3,7 @@
  * /api/v1/auth/register:
  *   post:
  *     summary: Register a new user
- *     description: Register a new user with the provided details.
+ *     description: Register a new user with extended profile and family members.
  *     tags:
  *       - Authentication
  *     parameters:
@@ -25,37 +25,99 @@
  *                 minLength: 2
  *                 maxLength: 50
  *                 example: Christian
- *                 description: The user's first name.
  *               lastName:
  *                 type: string
  *                 minLength: 2
  *                 maxLength: 50
  *                 example: Dushime
- *                 description: The user's last name.
  *               email:
  *                 type: string
  *                 format: email
  *                 example: christian.dushime@example.com
- *                 description: The user's email address.
  *               phone:
  *                 type: string
  *                 pattern: '^\\+?[1-9]\\d{1,14}$'
  *                 minLength: 10
  *                 maxLength: 15
  *                 example: +250788123456
- *                 description: The user's phone number.
  *               password:
  *                 type: string
  *                 minLength: 8
  *                 maxLength: 100
  *                 example: P@ssw0rd
- *                 description: The user's password.
  *               role:
  *                 type: string
- *                 example: user
- *                 description: The user's role.
+ *                 example: MEMBER
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *                 example: "1990-01-01"
+ *               gender:
+ *                 type: string
+ *                 example: Male
+ *               maritalStatus:
+ *                 type: string
+ *                 example: Married
+ *               nationality:
+ *                 type: string
+ *                 example: Rwandan
+ *               occupation:
+ *                 type: string
+ *                 example: Engineer
+ *               address:
+ *                 type: string
+ *                 example: Kigali, Rwanda
+ *               baptismDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2010-05-20"
+ *               confirmationDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2011-06-15"
+ *               spouseName:
+ *                 type: string
+ *                 example: Jane Doe
+ *               spousePhone:
+ *                 type: string
+ *                 example: +250788654321
+ *               numberOfChildren:
+ *                 type: integer
+ *                 example: 2
+ *               emergencyContactName:
+ *                 type: string
+ *                 example: John Doe
+ *               emergencyContactPhone:
+ *                 type: string
+ *                 example: +250788111222
+ *               spiritualMaturity:
+ *                 type: string
+ *                 example: Growing
+ *               ministryPreferences:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["Choir", "Youth"]
+ *               familyMembers:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       example: Child One
+ *                     relationship:
+ *                       type: string
+ *                       example: Child
+ *                     dateOfBirth:
+ *                       type: string
+ *                       format: date
+ *                       example: "2015-03-10"
+ *                     isMember:
+ *                       type: boolean
+ *                       example: false
  *     responses:
- *       200:
+ *       201:
  *         description: Registration successful
  *         content:
  *           application/json:
@@ -67,23 +129,115 @@
  *                   example: true
  *                 message:
  *                   type: string
- *                   example: "Registration successful. Please verify your phone number."
+ *                   example: "Registration successful. Please check your email for verification."
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     firstName:
+ *                       type: string
+ *                     lastName:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     phone:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     language:
+ *                       type: string
+ *                     avatarUrl:
+ *                       type: string
+ *                     isEmailVerified:
+ *                       type: boolean
+ *                     status:
+ *                       type: string
+ *                     is2FAEnabled:
+ *                       type: boolean
+ *                     phoneVerified:
+ *                       type: boolean
+ *                     memberProfile:
+ *                       type: object
+ *                       nullable: true
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                         dateOfBirth:
+ *                           type: string
+ *                           format: date
+ *                         gender:
+ *                           type: string
+ *                         maritalStatus:
+ *                           type: string
+ *                         nationality:
+ *                           type: string
+ *                         occupation:
+ *                           type: string
+ *                         address:
+ *                           type: string
+ *                         baptismDate:
+ *                           type: string
+ *                           format: date
+ *                         confirmationDate:
+ *                           type: string
+ *                           format: date
+ *                         dateJoined:
+ *                           type: string
+ *                           format: date-time
+ *                         spouseName:
+ *                           type: string
+ *                         spousePhone:
+ *                           type: string
+ *                         numberOfChildren:
+ *                           type: integer
+ *                         emergencyContactName:
+ *                           type: string
+ *                         emergencyContactPhone:
+ *                           type: string
+ *                         spiritualMaturity:
+ *                           type: string
+ *                         ministryPreferences:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         familyMembers:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               id:
+ *                                 type: string
+ *                               name:
+ *                                 type: string
+ *                               relationship:
+ *                                 type: string
+ *                               dateOfBirth:
+ *                                 type: string
+ *                                 format: date
+ *                               isMember:
+ *                                 type: boolean
+ *                               createdAt:
+ *                                 type: string
+ *                                 format: date-time
+ *                         createdAt:
+ *                           type: string
+ *                           format: date-time
+ *                         updatedAt:
+ *                           type: string
+ *                           format: date-time
  *       400:
- *         description: |
- *           Validation failed. Possible reasons:
- *           - User already exists
- *           - Invalid name format (must be first and last name)
- *           - Invalid email format
- *           - Password doesn't meet strength requirements
- *           - Invalid phone number format (E.164)
- *           - Phone number already in use
- *           - Invalid request body
+ *         description: Validation failed. Possible reasons include invalid data, duplicate email/phone, or bad request.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: Unauthorized or phone verification required
+ *       409:
+ *         description: Email or phone already in use
  *         content:
  *           application/json:
  *             schema:

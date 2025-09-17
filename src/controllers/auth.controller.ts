@@ -18,139 +18,438 @@ import {
 } from "../config/email";
 
 export class AuthController {
-  static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { firstName, lastName, email, phone, password, role } = matchedData<{
-      firstName: string;
-      lastName: string;
-      email: string;
-      phone?: string;
-      password: string;
-      role?: Role;
-    }>(req);
+static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    role = Role.MEMBER,
+    dateOfBirth,
+    gender,
+    maritalStatus,
+    nationality,
+    occupation,
+    address,
+    baptismDate,
+    confirmationDate,
+    spouseName,
+    spousePhone,
+    numberOfChildren,
+    emergencyContactName,
+    emergencyContactPhone,
+    spiritualMaturity,
+    ministryPreferences,
 
-    const isEN = req.isEnglishPreferred || true;
+    // Family members (array of objects)
+    familyMembers,
+  } = matchedData<{
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string;
+    password: string;
+    role?: Role;
 
-    const existingUser = await prisma.user.findFirst({ where: { email } });
-    if (existingUser) {
-      if (existingUser.isDeleted) {
-        if (!password) {
-          return next(AppError(isEN ? "Password is required." : "Mot de passe requis.", 400));
-        }
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const { verificationCode, verificationCodeExpiresAt } = generateVerificationCode(24 * 60 * 60 * 1000);
-        const avatarSvg = await generateAvatar(`${firstName} ${lastName}`);
-        const profileImageUrl = await uploadToCloudinary(avatarSvg, true);
+    dateOfBirth?: string;
+    gender?: string;
+    maritalStatus?: string;
+    nationality?: string;
+    occupation?: string;
+    address?: string;
+    baptismDate?: string;
+    confirmationDate?: string;
+    spouseName?: string;
+    spousePhone?: string;
+    numberOfChildren?: number;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
+    spiritualMaturity?: string;
+    ministryPreferences?: string[];
 
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            firstName,
-            lastName,
-            email,
-            phone,
-            password: hashedPassword,
-            profileImage: {
-              create: {
-                url: profileImageUrl.secure_url,
-                publicId: profileImageUrl.public_id,
-                type: AssetType.IMAGE,
-                category: AssetCategory.PROFILE_IMAGE,
-              },
-            },
-            verificationCode: Number(verificationCode),
-            verificationCodeExpiresAt,
-            isDeleted: false,
-            role: Role.MEMBER,
-            isEmailVerified: false,
-            isVerified: false,
-          },
-        });
+    familyMembers?: Array<{
+      name: string;
+      relationship: string;
+      dateOfBirth?: string;
+      isMember?: boolean;
+    }>;
+  }>(req);
 
-        await sendVerificationEmail(
+  const isEN = req.isEnglishPreferred || true;
+
+  // Helper to parse and validate dates
+  const parseDate = (dateStr?: string): Date | undefined => {
+    if (!dateStr) return undefined;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      throw AppError(isEN ? "Invalid date format." : "Format de date invalide.", 400);
+    }
+    if (d > new Date()) {
+      throw AppError(
+        isEN ? "Date cannot be in the future." : "La date ne peut pas être dans le futur.",
+        400
+      );
+    }
+    return d;
+  };
+
+  const parsedDateOfBirth = dateOfBirth ? parseDate(dateOfBirth) : undefined;
+  const parsedBaptismDate = baptismDate ? parseDate(baptismDate) : undefined;
+  const parsedConfirmationDate = confirmationDate ? parseDate(confirmationDate) : undefined;
+
+  // Check for existing user
+  const existingUser = await prisma.user.findFirst({
+    where: { email },
+    include: { profile: true },
+  });
+
+  if (existingUser) {
+    if (existingUser.isDeleted) {
+      if (!password) {
+        return next(AppError(isEN ? "Password is required." : "Mot de passe requis.", 400));
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 12);
+      const { verificationCode, verificationCodeExpiresAt } = generateVerificationCode(24 * 60 * 60 * 1000);
+      const avatarSvg = await generateAvatar(`${firstName} ${lastName}`);
+      const profileImageUrl = await uploadToCloudinary(avatarSvg, true);
+
+      // Reactivate user
+      const updatedUser = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          firstName,
+          lastName,
           email,
-          verificationCode.toString(),
-          isEN ? Language.EN : Language.FR,
-          "signup"
-        );
+          phone,
+          password: hashedPassword,
+          profileImage: {
+            create: {
+              url: profileImageUrl.secure_url,
+              publicId: profileImageUrl.public_id,
+              type: AssetType.IMAGE,
+              category: AssetCategory.PROFILE_IMAGE,
+            },
+          },
+          verificationCode: Number(verificationCode),
+          verificationCodeExpiresAt,
+          isDeleted: false,
+          role: Role.MEMBER,
+          language: isEN ? Language.EN : Language.FR,
+          isEmailVerified: false,
+          isVerified: false,
+          is2FAEnabled: false,
+          phoneVerified: false,
+          resetToken: null,
+          resetTokenExpiry: null,
+        },
+        include: { profile: true, profileImage: true },
+      });
 
-        return res.status(201).json({
-          success: true,
-          message: isEN
-            ? "Registration successful. Please check your email for verification."
-            : "Inscription réussie. Veuillez vérifier votre courriel pour vérification.",
+      let memberProfile = updatedUser.profile;
+
+      // Create or update member profile
+      if (memberProfile) {
+        memberProfile = await prisma.member.update({
+          where: { id: memberProfile.id },
+          data: {
+            dateOfBirth: parsedDateOfBirth,
+            gender,
+            maritalStatus,
+            nationality,
+            occupation,
+            address,
+            baptismDate: parsedBaptismDate,
+            confirmationDate: parsedConfirmationDate,
+            spouseName,
+            spousePhone,
+            numberOfChildren,
+            emergencyContactName,
+            emergencyContactPhone,
+            spiritualMaturity,
+            ministryPreferences: ministryPreferences || [],
+            dateJoined: new Date(), // Reset on reactivation
+          },
         });
       } else {
-        return next(AppError(isEN ? "Email already in use." : "Courriel déjà utilisé.", 409));
+        memberProfile = await prisma.member.create({
+          data: {
+            userId: updatedUser.id,
+            dateOfBirth: parsedDateOfBirth,
+            gender,
+            maritalStatus,
+            nationality,
+            occupation,
+            address,
+            baptismDate: parsedBaptismDate,
+            confirmationDate: parsedConfirmationDate,
+            spouseName,
+            spousePhone,
+            numberOfChildren,
+            emergencyContactName,
+            emergencyContactPhone,
+            spiritualMaturity,
+            ministryPreferences: ministryPreferences || [],
+            dateJoined: new Date(),
+          },
+        });
       }
-    }
 
-    if (phone) {
-      const phoneExists = await prisma.user.findFirst({ where: { phone, isDeleted: false } });
-      if (phoneExists) {
-        return next(AppError(isEN ? "Phone already in use." : "Téléphone déjà utilisé.", 409));
+      // Auto-create spouse family member if provided
+      if (spouseName && memberProfile) {
+        await prisma.familyMember.create({
+          data: {
+            name: spouseName,
+            relationship: "Spouse",
+            memberId: memberProfile.id,
+            isMember: false,
+          },
+        });
       }
-    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const { verificationCode, verificationCodeExpiresAt } = generateVerificationCode(24 * 60 * 60 * 1000);
-    const avatarSvg = await generateAvatar(`${firstName} ${lastName}`);
-    const profileImageUrl = await uploadToCloudinary(avatarSvg, true);
+      // Create additional family members
+      if (familyMembers && familyMembers.length > 0 && memberProfile) {
+        for (const fm of familyMembers) {
+          const fmDateOfBirth = fm.dateOfBirth ? parseDate(fm.dateOfBirth) : undefined;
+          await prisma.familyMember.create({
+            data: {
+              name: fm.name,
+              relationship: fm.relationship,
+              dateOfBirth: fmDateOfBirth,
+              isMember: fm.isMember || false,
+              memberId: memberProfile.id,
+            },
+          });
 
-    const user = await prisma.user.create({
-      data: {
-        firstName,
-        lastName,
+          // Auto-update child count
+          if (fm.relationship.toLowerCase().includes("child")) {
+            const childCount = await prisma.familyMember.count({
+              where: {
+                memberId: memberProfile.id,
+                relationship: { contains: "child", mode: "insensitive" },
+              },
+            });
+            await prisma.member.update({
+              where: { id: memberProfile.id },
+              data: { numberOfChildren: childCount },
+            });
+          }
+        }
+      }
+
+      await sendVerificationEmail(
         email,
-        phone,
-        password: hashedPassword,
-        profileImage: {
+        verificationCode.toString(),
+        isEN ? Language.EN : Language.FR,
+        "signup"
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: isEN
+          ? "Account reactivated. Please check your email for verification."
+          : "Compte réactivé. Veuillez vérifier votre courriel pour vérification.",
+      });
+    } else {
+      return next(AppError(isEN ? "Email already in use." : "Courriel déjà utilisé.", 409));
+    }
+  }
+
+  // Validate phone uniqueness
+  if (phone) {
+    const phoneExists = await prisma.user.findFirst({ where: { phone, isDeleted: false } });
+    if (phoneExists) {
+      return next(AppError(isEN ? "Phone already in use." : "Téléphone déjà utilisé.", 409));
+    }
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const { verificationCode, verificationCodeExpiresAt } = generateVerificationCode(24 * 60 * 60 * 1000);
+  const avatarSvg = await generateAvatar(`${firstName} ${lastName}`);
+  const profileImageUrl = await uploadToCloudinary(avatarSvg, true);
+
+  const user = await prisma.user.create({
+    data: {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password: hashedPassword,
+      profileImage: {
+        create: {
+          url: profileImageUrl.secure_url,
+          publicId: profileImageUrl.public_id,
+          type: AssetType.IMAGE,
+          category: AssetCategory.PROFILE_IMAGE,
+        },
+      },
+      verificationCode: Number(verificationCode),
+      verificationCodeExpiresAt,
+      role: role || Role.MEMBER,
+      currentRefreshTokenVersion: 0,
+      language: isEN ? Language.EN : Language.FR,
+      status: parsedBaptismDate ? "BAPTIZED" : "NEW",
+
+      ...(role === Role.MEMBER && {
+        profile: {
           create: {
-            url: profileImageUrl.secure_url,
-            publicId: profileImageUrl.public_id,
-            type: AssetType.IMAGE,
-            category: AssetCategory.PROFILE_IMAGE,
+            dateOfBirth: parsedDateOfBirth,
+            gender,
+            maritalStatus,
+            nationality,
+            occupation,
+            address,
+            baptismDate: parsedBaptismDate,
+            confirmationDate: parsedConfirmationDate,
+            spouseName,
+            spousePhone,
+            numberOfChildren,
+            emergencyContactName,
+            emergencyContactPhone,
+            spiritualMaturity,
+            ministryPreferences: ministryPreferences || [],
+            dateJoined: new Date(),
           },
         },
-        verificationCode: Number(verificationCode),
-        verificationCodeExpiresAt,
-        role: role || Role.MEMBER,
-        currentRefreshTokenVersion: 0,
-        language: isEN ? Language.EN : Language.FR,
+      }),
+    },
+    include: {
+      profile: {
+        include: {
+          familyMembers: true, // <-- Add this line to include family members
+        },
       },
-      include: {
-        profileImage: true,
-      },
-    });
-
-    await sendVerificationEmail(
-      email,
-      verificationCode.toString(),
-      isEN ? Language.EN : Language.FR,
-      "signup"
-    );
-
-    const accessToken = generateToken(user.id);
-    const refreshToken = generateRefreshToken(user.id, 0);
-
-    res.status(201).json({
-      success: true,
-      message: isEN
-        ? "Registration successful. Please check your email for verification."
-        : "Inscription réussie. Veuillez vérifier votre courriel pour vérification.",
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        language: user.language,
-        avatarUrl: user.avatarUrl || user.profileImage?.url,
-      },
-    });
+      profileImage: true,
+    },
   });
+
+
+  if (user.profile && (spouseName || (familyMembers && familyMembers.length > 0))) {
+    // Create spouse
+    if (spouseName) {
+      await prisma.familyMember.create({
+        data: {
+          name: spouseName,
+          relationship: "Spouse",
+          memberId: user.profile.id,
+          isMember: false,
+        },
+      });
+    }
+
+    // Create additional family members
+    if (familyMembers && familyMembers.length > 0) {
+      for (const fm of familyMembers) {
+        const fmDateOfBirth = fm.dateOfBirth ? parseDate(fm.dateOfBirth) : undefined;
+        await prisma.familyMember.create({
+          data: {
+            name: fm.name,
+            relationship: fm.relationship,
+            dateOfBirth: fmDateOfBirth,
+            isMember: fm.isMember || false,
+            memberId: user.profile.id,
+          },
+        });
+
+        // Auto-update child count
+        if (fm.relationship.toLowerCase().includes("child")) {
+          const childCount = await prisma.familyMember.count({
+            where: {
+              memberId: user.profile.id,
+              relationship: { contains: "child", mode: "insensitive" },
+            },
+          });
+          await prisma.member.update({
+            where: { id: user.profile.id },
+            data: { numberOfChildren: childCount },
+          });
+        }
+      }
+    }
+  }
+
+  // Send verification email
+  await sendVerificationEmail(
+    email,
+    verificationCode.toString(),
+    isEN ? Language.EN : Language.FR,
+    "signup"
+  );
+
+  // Generate tokens
+  const accessToken = generateToken(user.id);
+  const refreshToken = generateRefreshToken(user.id, 0);
+
+  // Fetch updated member profile with family members
+  let updatedProfile = user.profile;
+  if (updatedProfile) {
+    updatedProfile = await prisma.member.findUnique({
+      where: { id: updatedProfile.id },
+      include: { familyMembers: true },
+    });
+  }
+
+  // Build member profile response
+  const memberProfileResponse = updatedProfile
+    ? {
+        id: updatedProfile.id,
+        dateOfBirth: updatedProfile.dateOfBirth,
+        gender: updatedProfile.gender,
+        maritalStatus: updatedProfile.maritalStatus,
+        nationality: updatedProfile.nationality,
+        occupation: updatedProfile.occupation,
+        address: updatedProfile.address,
+        baptismDate: updatedProfile.baptismDate,
+        confirmationDate: updatedProfile.confirmationDate,
+        dateJoined: updatedProfile.dateJoined,
+        spouseName: updatedProfile.spouseName,
+        spousePhone: updatedProfile.spousePhone,
+        numberOfChildren: updatedProfile.numberOfChildren,
+        emergencyContactName: updatedProfile.emergencyContactName,
+        emergencyContactPhone: updatedProfile.emergencyContactPhone,
+        spiritualMaturity: updatedProfile.spiritualMaturity,
+        ministryPreferences: updatedProfile.ministryPreferences,
+        familyMembers: updatedProfile.familyMembers
+          ? updatedProfile.familyMembers.map(fm => ({
+              id: fm.id,
+              name: fm.name,
+              relationship: fm.relationship,
+              dateOfBirth: fm.dateOfBirth,
+              isMember: fm.isMember,
+              createdAt: fm.createdAt,
+            }))
+          : [],
+        createdAt: updatedProfile.createdAt,
+        updatedAt: updatedProfile.updatedAt,
+      }
+    : null;
+
+  res.status(201).json({
+    success: true,
+    message: isEN
+      ? "Registration successful. Please check your email for verification."
+      : "Inscription réussie. Veuillez vérifier votre courriel pour vérification.",
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      language: user.language,
+      avatarUrl: user.avatarUrl || user.profileImage?.url,
+      isEmailVerified: user.isEmailVerified,
+      status: user.status,
+      is2FAEnabled: user.is2FAEnabled,
+      phoneVerified: user.phoneVerified,
+      memberProfile: memberProfileResponse,
+    },
+  });
+});
 
   static login = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { email, password } = req.body;
