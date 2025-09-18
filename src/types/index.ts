@@ -12,6 +12,9 @@ declare global {
   }
 }
 
+declare module 'multer';
+
+
 export const fileSelects = {
   id: true,
   url: true,
