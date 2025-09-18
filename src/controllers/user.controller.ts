@@ -20,20 +20,7 @@ export class UserController {
   static getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserService.getUserByUnique(
       { id: req.user!.id },
-      {
-        ...profileSelects,
-        profile: {
-          select: {
-            id: true,
-            dateOfBirth: true,
-            gender: true,
-            baptismDate: true,
-            confirmationDate: true,
-            dateJoined: true,
-            ministryPreferences: true,
-          },
-        },
-      }
+      profileSelects
     );
 
     if (!user) return next(AppError("User not found", 404));

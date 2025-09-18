@@ -18,8 +18,15 @@ import {
 } from "../config/email";
 
 export class AuthController {
-  static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { firstName, lastName, email, phone, password, role } = matchedData<{
+ static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const {
+      firstName,
+      lastName,
+      email,
+      phone,
+      password,
+      role,
+    } = matchedData<{
       firstName: string;
       lastName: string;
       email: string;
@@ -30,58 +37,12 @@ export class AuthController {
 
     const isEN = req.isEnglishPreferred || true;
 
-    const existingUser = await prisma.user.findFirst({ where: { email } });
+    const existingUser = await prisma.user.findFirst({
+      where: { email, isDeleted: false },
+    });
+
     if (existingUser) {
-      if (existingUser.isDeleted) {
-        if (!password) {
-          return next(AppError(isEN ? "Password is required." : "Mot de passe requis.", 400));
-        }
-        const hashedPassword = await bcrypt.hash(password, 12);
-        const { verificationCode, verificationCodeExpiresAt } = generateVerificationCode(24 * 60 * 60 * 1000);
-        const avatarSvg = await generateAvatar(`${firstName} ${lastName}`);
-        const profileImageUrl = await uploadToCloudinary(avatarSvg, true);
-
-        await prisma.user.update({
-          where: { id: existingUser.id },
-          data: {
-            firstName,
-            lastName,
-            email,
-            phone,
-            password: hashedPassword,
-            profileImage: {
-              create: {
-                url: profileImageUrl.secure_url,
-                publicId: profileImageUrl.public_id,
-                type: AssetType.IMAGE,
-                category: AssetCategory.PROFILE_IMAGE,
-              },
-            },
-            verificationCode: Number(verificationCode),
-            verificationCodeExpiresAt,
-            isDeleted: false,
-            role: Role.MEMBER,
-            isEmailVerified: false,
-            isVerified: false,
-          },
-        });
-
-        await sendVerificationEmail(
-          email,
-          verificationCode.toString(),
-          isEN ? Language.EN : Language.FR,
-          "signup"
-        );
-
-        return res.status(201).json({
-          success: true,
-          message: isEN
-            ? "Registration successful. Please check your email for verification."
-            : "Inscription réussie. Veuillez vérifier votre courriel pour vérification.",
-        });
-      } else {
-        return next(AppError(isEN ? "Email already in use." : "Courriel déjà utilisé.", 409));
-      }
+      return next(AppError(isEN ? "Email already in use." : "Courriel déjà utilisé.", 409));
     }
 
     if (phone) {
@@ -89,6 +50,21 @@ export class AuthController {
       if (phoneExists) {
         return next(AppError(isEN ? "Phone already in use." : "Téléphone déjà utilisé.", 409));
       }
+    }
+
+    let assignedRole: Role = Role.MEMBER;
+
+    const existingAdmin = await prisma.user.findFirst({
+      where: { role: Role.ADMIN, isDeleted: false },
+    });
+
+    if (!existingAdmin) {
+      assignedRole = Role.ADMIN;
+    } else {
+      if (role === Role.ADMIN) {
+        return next(AppError(isEN ? "You cannot register as admin." : "Vous ne pouvez pas vous inscrire en tant qu'administrateur.", 403));
+      }
+      assignedRole = role || Role.MEMBER;
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -113,21 +89,17 @@ export class AuthController {
         },
         verificationCode: Number(verificationCode),
         verificationCodeExpiresAt,
-        role: role || Role.MEMBER,
+        role: assignedRole,
         currentRefreshTokenVersion: 0,
         language: isEN ? Language.EN : Language.FR,
+        status: "NEW",
       },
       include: {
         profileImage: true,
       },
     });
 
-    await sendVerificationEmail(
-      email,
-      verificationCode.toString(),
-      isEN ? Language.EN : Language.FR,
-      "signup"
-    );
+    await sendVerificationEmail(email, verificationCode.toString(), isEN ? Language.EN : Language.FR, "signup");
 
     const accessToken = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id, 0);
@@ -148,6 +120,10 @@ export class AuthController {
         role: user.role,
         language: user.language,
         avatarUrl: user.avatarUrl || user.profileImage?.url,
+        isEmailVerified: user.isEmailVerified,
+        status: user.status,
+        is2FAEnabled: user.is2FAEnabled,
+        phoneVerified: user.phoneVerified,
       },
     });
   });
@@ -555,44 +531,6 @@ export class AuthController {
     });
 
     res.status(200).json({ success: true, message: "Phone number verified successfully." });
-  });
-
-  static getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await prisma.user.findUnique({
-      where: { id: req.user!.id },
-      include: { profile: true, profileImage: true },
-    });
-
-    if (!user) return next(AppError("User not found.", 404));
-
-    res.status(200).json({
-      success: true,
-      user: {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        phone: user.phone,
-        role: user.role,
-        language: user.language,
-        avatarUrl: user.avatarUrl || user.profileImage?.url,
-        isEmailVerified: user.isEmailVerified,
-        status: user.status,
-        is2FAEnabled: user.is2FAEnabled,
-        phoneVerified: user.phoneVerified,
-        memberProfile: user.profile
-          ? {
-              id: user.profile.id,
-              dateOfBirth: user.profile.dateOfBirth,
-              gender: user.profile.gender,
-              baptismDate: user.profile.baptismDate,
-              confirmationDate: user.profile.confirmationDate,
-              dateJoined: user.profile.dateJoined,
-              ministryPreferences: user.profile.ministryPreferences,
-            }
-          : null,
-      },
-    });
   });
 
   static logout = (_req: Request, res: Response) => {

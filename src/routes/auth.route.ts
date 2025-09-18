@@ -46,10 +46,6 @@ router
     .post(verifyAccess, AuthController.logout);
 
 router
-    .route("/me")
-    .get(verifyAccess, AuthController.getMe);
-
-router
     .route("/verify-email")
     .post(verifyAccess, AuthController.verifyEmail);
 
