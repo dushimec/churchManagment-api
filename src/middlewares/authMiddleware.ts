@@ -47,7 +47,6 @@ export const verifyAccess = catchAsync(
         isDeleted: true,
         createdAt: true,
         updatedAt: true,
-        memberId: true,
         verificationToken: true,
         verificationCode: true,
         verificationCodeExpiresAt: true,
@@ -130,8 +129,8 @@ export const restrictToMemberOrSelf = catchAsync(
     if (req.user.role === "ADMIN" || req.user.role === "PASTOR") return next();
 
     const requestedId = req.params.id;
-    const member = await prisma.member.findUnique({
-      where: { userId: req.user.id },
+    const member = await prisma.member.findFirst({
+      where: { id: req.user.id },
     });
 
     if (!member || member.id !== requestedId) {
