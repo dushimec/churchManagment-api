@@ -22,7 +22,7 @@ const options: swaggerJsdoc.Options = {
     ],
     servers: [
       {
-        url: "https://churchmanagement.onrender.com",
+        url: "https://churchmanagement-ao3w.onrender.com",
         description: "Staging server",
       },
       {
