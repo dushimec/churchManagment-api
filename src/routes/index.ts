@@ -1,6 +1,7 @@
 import { Router } from "express";
 import signUpRoute  from "./auth.route";
 import userRoute  from "./user.route";
+import memberRoute from "./member.route"
 import { requestLogger } from "../middlewares/requestLogger";
 
 const router = Router();
@@ -13,5 +14,6 @@ router.get("/", (_, res) => {
 
 router.use("/auth", signUpRoute);
 router.use("/users", userRoute);
+router.use("/members", memberRoute);
 
 export default router;
