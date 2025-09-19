@@ -27,7 +27,7 @@ router
 
 router
     .route("/enable-2fa")
-    .post(verifyAccess, AuthController.enable2FA);
+    .post( AuthController.enable2FA);
 
 router 
     .route("/verify-2fa")
@@ -35,11 +35,11 @@ router
 
 router 
     .route("/verify-2fa-code")
-    .post(verifyAccess, AuthController.verify2FACode);
+    .post( AuthController.verify2FACode);
 
 router
     .route("/send-verification-sms")
-    .post(verifyAccess, AuthController.sendVerificationSMS);
+    .post(AuthController.sendVerificationSMS);
 
 router
     .route("/logout")
@@ -47,10 +47,10 @@ router
 
 router
     .route("/verify-email")
-    .post(verifyAccess, AuthController.verifyEmail);
+    .post( AuthController.verifyEmail);
 
 router
     .route("/verify-phone")
-    .post(verifyAccess, AuthController.verifyPhone);
+    .post( AuthController.verifyPhone);
 
 export default router;

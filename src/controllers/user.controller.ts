@@ -1,8 +1,5 @@
-// src/controllers/user.controller.ts
-
 import { NextFunction, Request, Response } from "express";
 import { catchAsync } from "../utils/CatchAsync";
-import { AppError } from "../utils/AppError";
 import { Role, Language } from "@prisma/client";
 import { profileSelects } from "../types";
 import { UserService } from "../services/user.service";
@@ -12,38 +9,18 @@ import { SmsService } from "../services/sms.service";
 import { sendVerificationEmail } from "../config/email";
 
 export class UserController {
-  /**
-   * @desc    Get current user
-   * @route   GET /api/v1/users/me
-   * @access  Private
-   */
+
   static getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserService.getUserByUnique(
       { id: req.user!.id },
       profileSelects
     );
 
-    if (!user) return next(AppError("User not found", 404));
-
-    res.status(200).json({
-      success: true,
-      user,
-    });
-  });
-
-  /**
-   * @desc    Get user by ID
-   * @route   GET /api/v1/users/:id
-   * @access  Private
-   */
-  static getUser = catchAsync(async (req: Request, res: Response, next) => {
-    const user = await UserService.getUserByUnique(
-      { id: req.params.id },
-      profileSelects
-    );
-
-    if (!user || user.isDeleted) {
-      return next(AppError("Account not found", 404));
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     res.status(200).json({
@@ -52,11 +29,25 @@ export class UserController {
     });
   });
 
-  /**
-   * @desc    Get all users (paginated, filtered, sorted)
-   * @route   GET /api/v1/users
-   * @access  Private
-   */
+  static getUser = catchAsync(async (req: Request, res: Response, next) => {
+    const user = await UserService.getUserByUnique(
+      { id: req.params.id },
+      profileSelects
+    );
+
+    if (!user || user.isDeleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Account not found",
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      user,
+    });
+  });
+
   static getUsers = catchAsync(async (req: Request, res: Response) => {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
@@ -87,7 +78,6 @@ export class UserController {
       }
     }
 
-    // Build orderBy
     const sortBy = (req.query.sortBy as string) || "firstName";
     const orderDir = (req.query.order as "asc" | "desc") || "asc";
     const orderBy = { [sortBy]: orderDir };
@@ -112,15 +102,14 @@ export class UserController {
     });
   });
 
-  /**
-   * @desc    Update user profile
-   * @route   PATCH /api/v1/users/:id
-   * @access  Private (self or admin)
-   */
+
   static updateUser = catchAsync(async (req: Request, res: Response, next) => {
-    // Allow self or admin
+
     if (req.user!.id !== req.params.id && req.user!.role !== "ADMIN") {
-      return next(AppError("Access denied", 403));
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
 
     const { firstName, lastName, email, phone, language } = req.body;
@@ -134,14 +123,18 @@ export class UserController {
       updates.language = language;
     }
 
-    // Prevent email/phone conflict
     if (email) {
       const existing = await UserService.getUser({
         email,
         NOT: { id: req.params.id },
         isDeleted: false,
       });
-      if (existing) return next(AppError("Email already in use", 409));
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: "Email already in use",
+        });
+      }
     }
 
     if (phone) {
@@ -150,7 +143,12 @@ export class UserController {
         NOT: { id: req.params.id },
         isDeleted: false,
       });
-      if (existing) return next(AppError("Phone already in use", 409));
+      if (existing) {
+        return res.status(409).json({
+          success: false,
+          message: "Phone already in use",
+        });
+      }
     }
 
     const user = await UserService.updateUser(req.params.id, updates, profileSelects);
@@ -161,21 +159,22 @@ export class UserController {
     });
   });
 
-  /**
-   * @desc    Upload/change avatar
-   * @route   POST /api/v1/users/:id/avatar
-   * @access  Private (self or admin)
-   */
   static uploadAvatar = catchAsync(async (req: Request, res: Response, next) => {
-    // Allow self or admin
+
     if (req.user!.id !== req.params.id && req.user!.role !== "ADMIN") {
-      return next(AppError("Access denied", 403));
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
 
     const { avatar } = req.body;
 
     if (!avatar) {
-      return next(AppError("Avatar data required", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Avatar data required",
+      });
     }
 
     let imageUrl: string;
@@ -191,7 +190,10 @@ export class UserController {
       imageUrl = result.secure_url;
       publicId = result.public_id;
     } else {
-      return next(AppError("Invalid avatar format", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid avatar format",
+      });
     }
 
     const user = await UserService.updateProfileImage(req.params.id, imageUrl, publicId);
@@ -204,27 +206,28 @@ export class UserController {
     });
   });
 
-  /**
-   * @desc    Resend verification code (email + optional SMS)
-   * @route   POST /api/v1/users/:id/resend-code
-   * @access  Private (self or admin)
-   */
   static resendVerificationCode = catchAsync(async (req: Request, res: Response, next) => {
-    // Allow self or admin
+
     if (req.user!.id !== req.params.id && req.user!.role !== "ADMIN") {
-      return next(AppError("Access denied", 403));
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
 
     const user = await UserService.getUserByUnique({ id: req.params.id });
-    if (!user) return next(AppError("User not found", 404));
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // ✅ Send via email
     await sendVerificationEmail(user.email, code, user.language, "login");
 
-    // ✅ Send via SMS if phone exists
     if (user.phone) {
       await SmsService.sendVerificationCodeSMS(user.phone, code, user.language);
     }
@@ -240,19 +243,20 @@ export class UserController {
     });
   });
 
-  /**
-   * @desc    Update user role (admin only)
-   * @route   PATCH /api/v1/users/:id/role
-   * @access  Admin only
-   */
   static updateUserRole = catchAsync(async (req: Request, res: Response, next) => {
     if (req.user!.role !== "ADMIN") {
-      return next(AppError("Access denied", 403));
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
 
     const { role } = req.body;
     if (!role || !Object.values(Role).includes(role)) {
-      return next(AppError("Invalid role", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role",
+      });
     }
 
     const user = await UserService.updateUserRole(req.params.id, role);
@@ -263,20 +267,22 @@ export class UserController {
     });
   });
 
-  /**
-   * @desc    Soft delete user (admin or self)
-   * @route   PATCH /api/v1/users/:id/delete
-   * @access  Private (admin or self)
-   */
+ 
   static softDeleteUser = catchAsync(async (req: Request, res: Response, next) => {
-    // Allow self or admin
+    
     if (req.user!.id !== req.params.id && req.user!.role !== "ADMIN") {
-      return next(AppError("Access denied", 403));
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
     }
 
     const user = await UserService.getUserByUnique({ id: req.params.id });
     if (!user || user.isDeleted) {
-      return next(AppError("User not found", 404));
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     await UserService.updateUser(req.params.id, { isDeleted: true });

@@ -29,9 +29,10 @@ export const uploadToCloudinary = async (
       });
     };
     return await cloudinary.uploader.upload(file, {
-        folder: "coroute/profiles",
+        folder: "churchDocument/profiles",
       });
   } catch (error) {
+    console.error("Cloudinary upload error:", error);
     logger.error("Error uploading to Cloudinary:", error);
     throw new Error("Failed to upload image");
   }

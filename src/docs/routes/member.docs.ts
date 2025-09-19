@@ -13,6 +13,8 @@
  *     description: Add a new church member.
  *     tags:
  *       - Members
+ *     security:
+ *       - Authentication: []
  *     requestBody:
  *       required: true
  *       content:
@@ -112,6 +114,8 @@
  *     description: Retrieve a paginated list of all members, with search and sorting.
  *     tags:
  *       - Members
+ *   security:
+ *     - Authentication: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -178,6 +182,8 @@
  *     description: Retrieve a single member by their unique ID.
  *     tags:
  *       - Members
+ *   security:
+ *     - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -213,6 +219,8 @@
  *     description: Update an existing member's information.
  *     tags:
  *       - Members
+ *     security:
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -318,6 +326,8 @@
  *     description: Permanently delete a member by ID.
  *     tags:
  *       - Members
+ *     security:
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id

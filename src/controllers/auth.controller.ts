@@ -18,7 +18,7 @@ import {
 } from "../config/email";
 
 export class AuthController {
- static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  static register = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {
       firstName,
       lastName,
@@ -42,13 +42,19 @@ export class AuthController {
     });
 
     if (existingUser) {
-      return next(AppError(isEN ? "Email already in use." : "Courriel déjà utilisé.", 409));
+      return res.status(409).json({
+        success: false,
+        message: isEN ? "Email already in use." : "Courriel déjà utilisé.",
+      });
     }
 
     if (phone) {
       const phoneExists = await prisma.user.findFirst({ where: { phone, isDeleted: false } });
       if (phoneExists) {
-        return next(AppError(isEN ? "Phone already in use." : "Téléphone déjà utilisé.", 409));
+        return res.status(409).json({
+          success: false,
+          message: isEN ? "Phone already in use." : "Téléphone déjà utilisé.",
+        });
       }
     }
 
@@ -62,7 +68,12 @@ export class AuthController {
       assignedRole = Role.ADMIN;
     } else {
       if (role === Role.ADMIN) {
-        return next(AppError(isEN ? "You cannot register as admin." : "Vous ne pouvez pas vous inscrire en tant qu'administrateur.", 403));
+        return res.status(403).json({
+          success: false,
+          message: isEN
+            ? "You cannot register as admin."
+            : "Vous ne pouvez pas vous inscrire en tant qu'administrateur.",
+        });
       }
       assignedRole = role || Role.MEMBER;
     }
@@ -132,7 +143,10 @@ export class AuthController {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return next(AppError("Please provide email and password.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Please provide email and password.",
+      });
     }
 
     const user = await prisma.user.findUnique({ where: { email }, include: { profileImage: true } });
@@ -145,11 +159,24 @@ export class AuthController {
           success: false,
         },
       });
-      return next(AppError("Incorrect email or password.", 401));
+      return res.status(401).json({
+        success: false,
+        message: "Incorrect email or password.",
+      });
     }
 
-    if (user.isDeleted) return next(AppError("Account deactivated.", 401));
-    if (!user.isEmailVerified) return next(AppError("Please verify your email first.", 403));
+    if (user.isDeleted) {
+      return res.status(401).json({
+        success: false,
+        message: "Account deactivated.",
+      });
+    }
+    if (!user.isEmailVerified) {
+      return res.status(403).json({
+        success: false,
+        message: "Please verify your email first.",
+      });
+    }
 
     if (
       (user.role === "ADMIN" || user.role === "PASTOR") &&
@@ -222,7 +249,10 @@ export class AuthController {
     const { email, code } = req.body;
 
     if (!email || !code) {
-      return next(AppError("Email and verification code are required.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Email and verification code are required.",
+      });
     }
 
     const user = await prisma.user.findUnique({
@@ -231,19 +261,31 @@ export class AuthController {
     });
 
     if (!user) {
-      return next(AppError("User not found.", 404));
+      return res.status(404).json({
+        success: false,
+        message: "User not found.",
+      });
     }
 
     if (!user.verificationCode || !user.verificationCodeExpiresAt) {
-      return next(AppError("No 2FA verification pending.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "No 2FA verification pending.",
+      });
     }
 
     if (user.verificationCode !== parseInt(code)) {
-      return next(AppError("Invalid verification code.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code.",
+      });
     }
 
     if (new Date() > user.verificationCodeExpiresAt) {
-      return next(AppError("Verification code expired. Please log in again.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Verification code expired. Please log in again.",
+      });
     }
 
     await prisma.user.update({
@@ -297,14 +339,27 @@ export class AuthController {
 
   static refreshAccessToken = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { refreshToken } = req.body;
-    if (!refreshToken) return next(AppError("Refresh token required.", 400));
+    if (!refreshToken) {
+      return res.status(400).json({
+        success: false,
+        message: "Refresh token required.",
+      });
+    }
 
     const decoded = verifyRefreshToken(refreshToken);
-    if (!decoded) return next(AppError("Invalid or expired refresh token.", 401));
+    if (!decoded) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid or expired refresh token.",
+      });
+    }
 
     const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user || user.isDeleted || decoded.version !== user.currentRefreshTokenVersion) {
-      return next(AppError("Session expired. Please log in again.", 401));
+      return res.status(401).json({
+        success: false,
+        message: "Session expired. Please log in again.",
+      });
     }
 
     const newAccessToken = generateToken(user.id);
@@ -346,7 +401,10 @@ export class AuthController {
     const { token, password } = req.body;
 
     if (!token || !password) {
-      return next(AppError("Token and new password are required.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Token and new password are required.",
+      });
     }
 
     const user = await prisma.user.findFirst({
@@ -358,7 +416,10 @@ export class AuthController {
     });
 
     if (!user) {
-      return next(AppError("Invalid or expired reset token.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or expired reset token.",
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -386,12 +447,22 @@ export class AuthController {
 
   static enable2FA = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { phone } = req.body;
-    if (!phone) return next(AppError("Phone number required.", 400));
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number required.",
+      });
+    }
 
     const existing = await prisma.user.findFirst({
       where: { phone, NOT: { id: req.user!.id } },
     });
-    if (existing) return next(AppError("Phone already in use.", 409));
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Phone already in use.",
+      });
+    }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -422,15 +493,24 @@ export class AuthController {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
 
     if (!user || !user.verificationCode || !user.verificationCodeExpiresAt) {
-      return next(AppError("No pending verification.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "No pending verification.",
+      });
     }
 
     if (user.verificationCode !== parseInt(code)) {
-      return next(AppError("Invalid code.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid code.",
+      });
     }
 
     if (new Date() > user.verificationCodeExpiresAt) {
-      return next(AppError("Code expired. Request a new one.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Code expired. Request a new one.",
+      });
     }
 
     await prisma.user.update({
@@ -448,7 +528,12 @@ export class AuthController {
 
   static sendVerificationSMS = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { phone } = req.body;
-    if (!phone) return next(AppError("Phone number required.", 400));
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: "Phone number required.",
+      });
+    }
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -472,23 +557,40 @@ export class AuthController {
   });
 
   static verifyEmail = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const { code } = req.body;
-    const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and verification code are required.",
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
 
     if (!user || !user.verificationCode || !user.verificationCodeExpiresAt) {
-      return next(AppError("No pending email verification.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "No pending email verification.",
+      });
     }
 
     if (user.verificationCode !== parseInt(code)) {
-      return next(AppError("Invalid verification code.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code.",
+      });
     }
 
     if (new Date() > user.verificationCodeExpiresAt) {
-      return next(AppError("Verification code expired. Request a new one.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Verification code expired. Request a new one.",
+      });
     }
 
     await prisma.user.update({
-      where: { id: req.user!.id },
+      where: { id: user.id },
       data: {
         isEmailVerified: true,
         verificationCode: null,
@@ -510,15 +612,24 @@ export class AuthController {
     const user = await prisma.user.findUnique({ where: { id: req.user!.id } });
 
     if (!user || !user.verificationCode || !user.verificationCodeExpiresAt) {
-      return next(AppError("No pending phone verification.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "No pending phone verification.",
+      });
     }
 
     if (user.verificationCode !== parseInt(code)) {
-      return next(AppError("Invalid verification code.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Invalid verification code.",
+      });
     }
 
     if (new Date() > user.verificationCodeExpiresAt) {
-      return next(AppError("Verification code expired. Request a new one.", 400));
+      return res.status(400).json({
+        success: false,
+        message: "Verification code expired. Request a new one.",
+      });
     }
 
     await prisma.user.update({

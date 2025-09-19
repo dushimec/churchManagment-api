@@ -10,24 +10,31 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 export const verifyAccess = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log("Authorization header:", req.headers.authorization); // Add this line
+    console.log("Authorization header:", req.headers.authorization);
+    let isEN = req.isEnglishPreferred;
     let token;
     if (
       req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
+      req.headers.authorization.startsWith("Bearer ")
     ) {
       token = req.headers.authorization.split(" ")[1];
     }
 
     if (!token) {
-      return next(AppError("You are not logged in! Please log in.", 401));
+      return res.status(401).json({
+        success: false,
+        message: isEN ? "You are not logged in. Please log in to get access." : "Vous n'êtes pas connecté. Veuillez vous connecter pour obtenir l'accès."
+      });
     }
 
     let decoded;
     try {
       decoded = verifyAccessToken(token);
     } catch {
-      return next(AppError("Invalid or expired token. Please log in again.", 401));
+      return res.status(401).json({
+        success: false,
+        message: isEN ? "Invalid token. Please log in again." : "Jeton invalide. Veuillez vous reconnecter."
+      });
     }
 
     const currentUser = await prisma.user.findUnique({
@@ -61,16 +68,18 @@ export const verifyAccess = catchAsync(
       },
     });
 
+    
+
     if (!currentUser || currentUser.isDeleted) {
-      return next(AppError("User no longer exists or is deactivated.", 401));
+      return res.status(401).json({
+        success: false,
+        message: isEN ? "The user belonging to this token no longer exists." : "El usuario que pertenece a este token ya no existe."
+      });
     }
 
-    // if (decoded.version !== currentUser.currentRefreshTokenVersion) {
-    //   return next(AppError("Session revoked. Please log in again.", 401));
-    // }
 
     req.user = currentUser;
-    req.isEnglishPreferred = currentUser.language === "EN";
+    req.isEnglishPreferred = isEN
 
     next();
   }
@@ -81,7 +90,7 @@ export const protectOptional = catchAsync(
     let token;
     if (
       req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
+      req.headers.authorization.startsWith("Bearer ")
     ) {
       token = req.headers.authorization.split(" ")[1];
     }

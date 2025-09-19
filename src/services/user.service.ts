@@ -1,10 +1,7 @@
-// src/services/user.service.ts
-
 import { Prisma } from "@prisma/client";
 import { prisma } from "../config/database";
 
 export class UserService {
-  // ✅ Get user by condition
   public static async getUser(
     where: Prisma.UserWhereInput,
     include?: Prisma.UserInclude
@@ -15,7 +12,6 @@ export class UserService {
     });
   }
 
-  // ✅ Get user by unique ID
   public static async getUserByUnique(
     where: Prisma.UserWhereUniqueInput,
     include?: Prisma.UserInclude
@@ -26,7 +22,6 @@ export class UserService {
     });
   }
 
-  // ✅ Get paginated users
   public static async getAllUsers(
     page: number = 1,
     limit: number = 10,
@@ -46,7 +41,6 @@ export class UserService {
     return { users, total };
   }
 
-  // ✅ Update user
   public static async updateUser(
     id: string,
     data: Prisma.UserUpdateInput,
@@ -59,7 +53,6 @@ export class UserService {
     });
   }
 
-  // ✅ Search users
   public static async searchUsers(
     query: string,
     page: number = 1,
@@ -72,7 +65,7 @@ export class UserService {
         { email: { contains: query, mode: "insensitive" } },
         { phone: { contains: query, mode: "insensitive" } },
       ],
-      isDeleted: false, // assuming you still have this field — if not, remove
+      isDeleted: false, 
     };
 
     const [users, total] = await prisma.$transaction([
@@ -103,7 +96,6 @@ export class UserService {
     return { users, total };
   }
 
-  // ✅ Update user role
   public static async updateUserRole(id: string, role: Prisma.UserUpdateInput["role"]) {
     return await prisma.user.update({
       where: { id },
@@ -118,7 +110,6 @@ export class UserService {
     });
   }
 
-  // ✅ Toggle 2FA
   public static async toggle2FA(id: string, enable: boolean) {
     return await prisma.user.update({
       where: { id },
@@ -130,7 +121,6 @@ export class UserService {
     });
   }
 
-  // ✅ Update profile image
   public static async updateProfileImage(
     userId: string,
     url: string,

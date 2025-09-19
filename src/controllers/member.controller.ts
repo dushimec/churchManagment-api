@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../config/database";
-import { AppError } from "../utils/AppError";
 import { catchAsync } from "../utils/CatchAsync";
 import { matchedData } from "express-validator";
 import type { Prisma } from "@prisma/client";
-
 
 const removeUndefined = (obj: Record<string, any>) =>
   Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
@@ -39,52 +37,59 @@ export class MemberController {
       if (!dateStr) return undefined;
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) {
-        throw AppError(isEN ? "Invalid date format." : "Format de date invalide.", 400);
+        throw new Error(isEN ? "Invalid date format." : "Format de date invalide.");
       }
       if (d > new Date()) {
-        throw AppError(
-          isEN ? "Date cannot be in the future." : "La date ne peut pas être dans le futur.",
-          400
+        throw new Error(
+          isEN
+            ? "Date cannot be in the future."
+            : "La date ne peut pas être dans le futur."
         );
       }
       return d;
     };
 
-    const data: Prisma.MemberCreateInput = {
-      names,
-      email,
-      phoneNumber,
-      idNumber,
-      district,
-      sector,
-      cell,
-      churchCell,
-      dateOfBirth: parseDate(dateOfBirth),
-      gender,
-      maritalStatus,
-      nationality,
-      occupation,
-      address,
-      baptismDate: parseDate(baptismDate),
-      confirmationDate: parseDate(confirmationDate),
-      spiritualMaturity,
-      ministryPreferences: ministryPreferences || [],
-      dateJoined: new Date(),
-    };
+    try {
+      const data: Prisma.MemberCreateInput = {
+        names,
+        email,
+        phoneNumber,
+        idNumber,
+        district,
+        sector,
+        cell,
+        churchCell,
+        dateOfBirth: parseDate(dateOfBirth),
+        gender,
+        maritalStatus,
+        nationality,
+        occupation,
+        address,
+        baptismDate: parseDate(baptismDate),
+        confirmationDate: parseDate(confirmationDate),
+        spiritualMaturity,
+        ministryPreferences: ministryPreferences || [],
+        dateJoined: new Date(),
+      };
 
-    Object.keys(data).forEach(
-      (key) => data[key as keyof typeof data] === undefined && delete data[key as keyof typeof data]
-    );
+      Object.keys(data).forEach(
+        (key) => data[key as keyof typeof data] === undefined && delete data[key as keyof typeof data]
+      );
 
-    const member = await prisma.member.create({ data });
+      const member = await prisma.member.create({ data });
 
-    res.status(201).json({
-      success: true,
-      message: isEN ? "Member created successfully." : "Membre créé avec succès.",
-      data: member,
-    });
+      res.status(201).json({
+        success: true,
+        message: isEN ? "Member created successfully." : "Membre créé avec succès.",
+        data: member,
+      });
+    } catch (err: any) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
+      });
+    }
   });
-
 
   static getAllMembers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -103,7 +108,6 @@ export class MemberController {
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    // Search across multiple fields
     const whereClause: any = {};
     if (search) {
       whereClause.OR = [
@@ -123,7 +127,6 @@ export class MemberController {
         { spiritualMaturity: { contains: search, mode: "insensitive" } },
       ];
     }
-
 
     const allowedSortFields = [
       "names", "email", "phoneNumber", "idNumber", "district", "sector", "cell", "churchCell",
@@ -162,7 +165,10 @@ export class MemberController {
     });
 
     if (!member) {
-      return next(AppError("Member not found.", 404));
+      return res.status(404).json({
+        success: false,
+        message: "Member not found.",
+      });
     }
 
     res.status(200).json({
@@ -198,9 +204,19 @@ export class MemberController {
     const isEN = req.isEnglishPreferred || true;
 
     const parseDate = (dateStr?: string): Date | undefined => {
-      if (!dateStr) return undefined;
-      const d = new Date(dateStr);
-      return isNaN(d.getTime()) ? undefined : d;
+        if (!dateStr) return undefined;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) {
+    throw new Error(isEN ? "Invalid date format." : "Format de date invalide.");
+  }
+  if (d > new Date()) {
+    throw new Error(
+      isEN
+        ? "Date cannot be in the future."
+        : "La date ne peut pas être dans le futur."
+    );
+  }
+      return d;
     };
 
     const data = removeUndefined({
@@ -224,10 +240,18 @@ export class MemberController {
       ministryPreferences,
     });
 
-    const member = await prisma.member.update({
-      where: { id },
-      data,
-    });
+    let member;
+    try {
+      member = await prisma.member.update({
+        where: { id },
+        data,
+      });
+    } catch (error: any) {
+      return res.status(404).json({
+        success: false,
+        message: isEN ? "Member not found." : "Membre non trouvé.",
+      });
+    }
 
     res.status(200).json({
       success: true,
@@ -236,13 +260,19 @@ export class MemberController {
     });
   });
 
-  // DELETE (soft delete not applicable — Member has no isDeleted field)
-  static deleteMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    static deleteMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    await prisma.member.delete({
-      where: { id },
-    });
+    try {
+      await prisma.member.delete({
+        where: { id },
+      });
+    } catch (error: any) {
+      return res.status(404).json({
+        success: false,
+        message: "Member not found.",
+      });
+    }
 
     res.status(200).json({
       success: true,

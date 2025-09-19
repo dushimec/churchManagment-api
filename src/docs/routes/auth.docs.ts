@@ -360,23 +360,6 @@
 
 /**
  * @swagger
- * /api/v1/auth/me:
- *   get:
- *     summary: Get current user
- *     description: Get the authenticated user's profile.
- *     tags:
- *       - Authentication
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: User profile
- *       404:
- *         description: User not found
- */
-
-/**
- * @swagger
  * /api/v1/auth/verify-email:
  *   post:
  *     summary: Verify email
@@ -390,6 +373,9 @@
  *           schema:
  *             type: object
  *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "christian.dushime@example.com"
  *               code:
  *                 type: string
  *                 example: "123456"
@@ -415,6 +401,9 @@
  *           schema:
  *             type: object
  *             properties:
+ *               phone:
+ *                 type: string
+ *                 example: "+250788123456"
  *               code:
  *                 type: string
  *                 example: "123456"

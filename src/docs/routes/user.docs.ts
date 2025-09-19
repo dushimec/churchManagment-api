@@ -7,7 +7,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -56,7 +56,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     responses:
  *       200:
  *         description: User profile
@@ -73,7 +73,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -94,7 +94,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -137,7 +137,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -173,7 +173,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -199,7 +199,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -235,7 +235,7 @@
  *     tags:
  *       - Users
  *     security:
- *       - bearerAuth: []
+ *       - Authentication: []
  *     parameters:
  *       - in: path
  *         name: id
