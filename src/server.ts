@@ -14,6 +14,9 @@ dotenv.config();
 
 const app: Express = express();
 
+app.get("/", (_, res) => {
+  res.json({ message: "Welcome to the church management API" });
+});
 app.use(helmet());
 app.use(
   cors({
