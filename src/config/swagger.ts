@@ -11,14 +11,20 @@ const options: swaggerJsdoc.Options = {
     },
     tags: [
       { name: "Public", description: "These are accessible by any user" },
-      {
-        name: "Authentication",
-        description: "Authorizations endpoints for users",
-      },
-
+      { name: "Authentication", description: "Authorizations endpoints for users" },
       { name: "Admin", description: "Admin management endpoints" },
       { name: "Users", description: "User management endpoints" },
-      
+      { name: "Members", description: "Member management endpoints" },
+      { name: "Services", description: "Church service and attendance endpoints" },
+      { name: "Pastoral", description: "Prayer requests and counseling endpoints" },
+      { name: "Finance", description: "Contribution and financial endpoints" },
+      { name: "Sermons", description: "Sermon and teaching endpoints" },
+      { name: "Media", description: "Church media and asset endpoints" },
+      { name: "Certifications", description: "Marriage and baptism request endpoints" },
+      { name: "Communication", description: "Notification and messaging endpoints" },
+      { name: "Community", description: "Event and registration endpoints" },
+      { name: "Forms", description: "Church standard forms endpoints" },
+
     ],
     servers: [
       {

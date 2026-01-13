@@ -1,82 +1,47 @@
 import { NextFunction, Request, Response } from "express";
-import { prisma } from "../config/database";
 import { catchAsync } from "../utils/CatchAsync";
 import { matchedData } from "express-validator";
 import type { Prisma } from "@prisma/client";
+import { MemberService } from "../services/member.service";
 
 const removeUndefined = (obj: Record<string, any>) =>
   Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== undefined));
 
 export class MemberController {
 
-  static createMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const {
-      names,
-      email,
-      phoneNumber,
-      idNumber,
-      district,
-      sector,
-      cell,
-      churchCell,
-      dateOfBirth,
-      gender,
-      maritalStatus,
-      nationality,
-      occupation,
-      address,
-      baptismDate,
-      confirmationDate,
-      spiritualMaturity,
-      ministryPreferences,
-    } = matchedData(req, { includeOptionals: true });
+  private static parseDate = (dateStr?: string, isEN: boolean = true): Date | undefined => {
+    if (!dateStr) return undefined;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      throw new Error(isEN ? "Invalid date format." : "Format de date invalide.");
+    }
+    if (d > new Date()) {
+      throw new Error(
+        isEN
+          ? "Date cannot be in the future."
+          : "La date ne peut pas être dans le futur."
+      );
+    }
+    return d;
+  };
 
+  static createMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const data = matchedData(req, { includeOptionals: true });
     const isEN = req.isEnglishPreferred || true;
 
-    const parseDate = (dateStr?: string): Date | undefined => {
-      if (!dateStr) return undefined;
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) {
-        throw new Error(isEN ? "Invalid date format." : "Format de date invalide.");
-      }
-      if (d > new Date()) {
-        throw new Error(
-          isEN
-            ? "Date cannot be in the future."
-            : "La date ne peut pas être dans le futur."
-        );
-      }
-      return d;
-    };
-
     try {
-      const data: Prisma.MemberCreateInput = {
-        names,
-        email,
-        phoneNumber,
-        idNumber,
-        district,
-        sector,
-        cell,
-        churchCell,
-        dateOfBirth: parseDate(dateOfBirth),
-        gender,
-        maritalStatus,
-        nationality,
-        occupation,
-        address,
-        baptismDate: parseDate(baptismDate),
-        confirmationDate: parseDate(confirmationDate),
-        spiritualMaturity,
-        ministryPreferences: ministryPreferences || [],
+      const memberData: Prisma.MemberCreateInput = {
+        ...data,
+        dateOfBirth: this.parseDate(data.dateOfBirth, isEN),
+        baptismDate: this.parseDate(data.baptismDate, isEN),
+        confirmationDate: this.parseDate(data.confirmationDate, isEN),
         dateJoined: new Date(),
+        ministryPreferences: data.ministryPreferences || [],
+        names: ""
       };
 
-      Object.keys(data).forEach(
-        (key) => data[key as keyof typeof data] === undefined && delete data[key as keyof typeof data]
-      );
-
-      const member = await prisma.member.create({ data });
+      const cleanedData = removeUndefined(memberData);
+      const member = await MemberService.createMember(cleanedData as Prisma.MemberCreateInput);
 
       res.status(201).json({
         success: true,
@@ -106,9 +71,7 @@ export class MemberController {
       sortOrder?: string;
     };
 
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const whereClause: any = {};
+    const whereClause: Prisma.MemberWhereInput = {};
     if (search) {
       whereClause.OR = [
         { names: { contains: search, mode: "insensitive" } },
@@ -136,15 +99,12 @@ export class MemberController {
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : "createdAt";
     const order: "asc" | "desc" = sortOrder === "asc" ? "asc" : "desc";
 
-    const [members, total] = await Promise.all([
-      prisma.member.findMany({
-        where: whereClause,
-        skip,
-        take: Number(limit),
-        orderBy: { [sortField]: order },
-      }),
-      prisma.member.count({ where: whereClause }),
-    ]);
+    const { data: members, total } = await MemberService.getAllMembers(
+      Number(page),
+      Number(limit),
+      whereClause,
+      { [sortField]: order }
+    );
 
     res.status(200).json({
       success: true,
@@ -160,9 +120,7 @@ export class MemberController {
 
   static getMemberById = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-    const member = await prisma.member.findUnique({
-      where: { id },
-    });
+    const member = await MemberService.getMemberById(id);
 
     if (!member) {
       return res.status(404).json({
@@ -179,72 +137,23 @@ export class MemberController {
 
   static updateMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
-
-    const {
-      names,
-      email,
-      phoneNumber,
-      idNumber,
-      district,
-      sector,
-      cell,
-      churchCell,
-      dateOfBirth,
-      gender,
-      maritalStatus,
-      nationality,
-      occupation,
-      address,
-      baptismDate,
-      confirmationDate,
-      spiritualMaturity,
-      ministryPreferences,
-    } = matchedData(req);
-
+    const data = matchedData(req);
     const isEN = req.isEnglishPreferred || true;
 
-    const parseDate = (dateStr?: string): Date | undefined => {
-        if (!dateStr) return undefined;
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) {
-    throw new Error(isEN ? "Invalid date format." : "Format de date invalide.");
-  }
-  if (d > new Date()) {
-    throw new Error(
-      isEN
-        ? "Date cannot be in the future."
-        : "La date ne peut pas être dans le futur."
-    );
-  }
-      return d;
-    };
-
-    const data = removeUndefined({
-      names,
-      email,
-      phoneNumber,
-      idNumber,
-      district,
-      sector,
-      cell,
-      churchCell,
-      dateOfBirth: parseDate(dateOfBirth),
-      gender,
-      maritalStatus,
-      nationality,
-      occupation,
-      address,
-      baptismDate: parseDate(baptismDate),
-      confirmationDate: parseDate(confirmationDate),
-      spiritualMaturity,
-      ministryPreferences,
-    });
-
-    let member;
     try {
-      member = await prisma.member.update({
-        where: { id },
-        data,
+      const updateData = removeUndefined({
+        ...data,
+        dateOfBirth: this.parseDate(data.dateOfBirth, isEN),
+        baptismDate: this.parseDate(data.baptismDate, isEN),
+        confirmationDate: this.parseDate(data.confirmationDate, isEN),
+      });
+
+      const member = await MemberService.updateMember(id, updateData);
+
+      res.status(200).json({
+        success: true,
+        message: isEN ? "Member updated successfully." : "Membre mis à jour avec succès.",
+        data: member,
       });
     } catch (error: any) {
       return res.status(404).json({
@@ -252,20 +161,16 @@ export class MemberController {
         message: isEN ? "Member not found." : "Membre non trouvé.",
       });
     }
-
-    res.status(200).json({
-      success: true,
-      message: isEN ? "Member updated successfully." : "Membre mis à jour avec succès.",
-      data: member,
-    });
   });
 
-    static deleteMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  static deleteMember = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     try {
-      await prisma.member.delete({
-        where: { id },
+      await MemberService.deleteMember(id);
+      res.status(200).json({
+        success: true,
+        message: "Member deleted successfully.",
       });
     } catch (error: any) {
       return res.status(404).json({
@@ -273,10 +178,5 @@ export class MemberController {
         message: "Member not found.",
       });
     }
-
-    res.status(200).json({
-      success: true,
-      message: "Member deleted successfully.",
-    });
   });
 }

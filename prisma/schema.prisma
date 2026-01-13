@@ -232,41 +232,6 @@ model Sermon {
   @@map("sermons")
 }
 
-model Event {
-  id              String              @id @default(cuid())
-  title           String
-  eventType       EventType
-  description     String?
-  startDate       DateTime
-  endDate         DateTime
-  location        String
-  maxParticipants Int?
-  organizer       User                @relation(fields: [organizerId], references: [id])
-  organizerId     String
-  status          RequestStatus       @default(PENDING)
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
-  registrations   EventRegistration[]
-  notifications   Notification[]
-  MarriageRequest MarriageRequest[]
-  BaptismRequest  BaptismRequest[]
-  Media           Media[]
-
-  @@map("events")
-}
-
-model EventRegistration {
-  id           String        @id @default(cuid())
-  event        Event         @relation(fields: [eventId], references: [id])
-  eventId      String
-  member       User          @relation(fields: [memberId], references: [id])
-  memberId     String
-  registeredAt DateTime      @default(now())
-  status       RequestStatus @default(PENDING)
-
-  @@unique([eventId, memberId])
-  @@map("event_registrations")
-}
 
 model MarriageRequest {
   id                 String        @id @default(cuid())
@@ -291,8 +256,6 @@ model MarriageRequest {
   approvedAt         DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  event              Event?        @relation(fields: [eventId], references: [id])
-  eventId            String?
 
   @@index([brideId, groomId], name: "marriage_bride_groom_idx")
   @@map("marriage_requests")
@@ -302,13 +265,6 @@ model BaptismRequest {
   id             String        @id @default(cuid())
   childName      String
   dateOfBirth    DateTime
-  parent1Name    String
-  parent1Phone   String
-  parent1Email   String?
-  parent2Name    String?
-  parent2Phone   String?
-  parent2Email   String?
-  pastorNotes    String?
   requester      User          @relation("BaptismRequester", fields: [requesterId], references: [id])
   requesterId    String
   status         RequestStatus @default(PENDING)
@@ -319,8 +275,6 @@ model BaptismRequest {
   certificateUrl String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
-  event          Event?        @relation(fields: [eventId], references: [id])
-  eventId        String?
 
   @@map("baptism_requests")
 }
@@ -344,34 +298,7 @@ model Contribution {
   @@map("contributions")
 }
 
-model Media {
-  id           String   @id @default(cuid())
-  title        String
-  description  String?
-  url          String
-  fileType     String
-  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
-  uploadedById String
-  eventId      String?
-  eventIdRef   Event?   @relation(fields: [eventId], references: [id])
-  sermonId     String?
-  sermonIdRef  Sermon?  @relation(fields: [sermonId], references: [id])
-  createdAt    DateTime @default(now())
 
-  @@map("media")
-}
-
-model LoginActivity {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  ip        String?
-  userAgent String?
-  success   Boolean
-  timestamp DateTime @default(now())
-
-  @@map("login_activities")
-}
 
 model Notification {
   id             String   @id @default(cuid())
@@ -433,3 +360,180 @@ model CounselingAppointment {
 
   @@map("counseling_appointments")
 }
+
+enum RecommendationType {
+  YOUTH
+  OLD
+}
+
+model YouthForm {
+  id          String   @id @default(cuid())
+  name        String
+  idNumber    String
+  phone       String
+  district    String
+  cell        String
+  churchCell  String
+  youthFamily String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("youth_forms")
+}
+
+model CellRecommendation {
+  id             String   @id @default(cuid())
+  names          String
+  idNumber       String
+  phone          String
+  email          String
+  district       String
+  cell           String
+  churchCellName String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("cell_recommendations")
+}
+
+model ChurchRecommendation {
+  id                  String             @id @default(cuid())
+  type                RecommendationType
+  idNumber            String
+  name                String
+  email               String?
+  phone               String?
+  district            String
+  cell                String
+  cellRecommendation  String
+  youthRecommendation String? // Only for YOUTH type
+  passportPhoto       String? // Only for YOUTH type (URL/Path)
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  @@map("church_recommendations")
+}
+
+model BaptismCertification {
+  id          String   @id @default(cuid())
+  name        String
+  email       String
+  phone       String
+  baptismDate DateTime
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("baptism_certifications")
+}
+
+model MarriageCertificate {
+  id            String   @id @default(cuid())
+  brideName     String
+  groomName     String
+  brideEmail    String
+  groomEmail    String
+  bridePhone    String
+  groomPhone    String
+  brideAddress  String
+  groomAddress  String
+  marenName    String   // M
+  parenName    String   // P
+  parentAddress String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("marriage_certificates")
+}
+
+model WeddingServiceRequest {
+  id          String        @id @default(cuid())
+  brideName   String
+  groomName   String
+  brideEmail  String
+  groomEmail  String
+  bridePhone  String
+  groomPhone  String
+  marenName  String        // M
+  parenName  String        // P
+  idCopies    String[]      // URLs or paths to ID copies
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("wedding_service_requests")
+}
+
+model ChildDedicationRequest {
+  id             String        @id @default(cuid())
+  parentNames    String
+  childNames     String
+  dateOfBirth    DateTime
+  parentPhone    String
+  parentEmail    String
+  dedicationDate DateTime      // date of player
+  churchService  String        // church service for player
+  status         RequestStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("child_dedication_requests")
+}
+
+model Event {
+  id                String              @id @default(cuid())
+  title             String
+  description       String?
+  eventType         EventType
+  date              DateTime
+  location          String
+  organizer         User?               @relation(fields: [organizerId], references: [id])
+  organizerId       String?
+  registrations     EventRegistration[]
+  notifications     Notification[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+
+  @@map("events")
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  event     Event    @relation(fields: [eventId], references: [id])
+  eventId   String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+  @@map("event_registrations")
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  title     String?
+  url       String
+  type      AssetType
+  sermon    Sermon?  @relation(fields: [sermonId], references: [id])
+  sermonId  String?
+  user      User?    @relation(fields: [userId], references: [id])
+  userId    String?
+  createdAt DateTime @default(now())
+
+  @@map("media")
+}
+
+model LoginActivity {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  ip        String?
+  userAgent String?
+  success   Boolean  @default(true)
+  timestamp DateTime @default(now())
+
+
+  @@map("login_activities")
+}
+
+
+
