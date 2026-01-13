@@ -91,3 +91,5 @@ logs/
 .happypack/
 .tern-port
 info.log
+.vercel
+.env*.local
