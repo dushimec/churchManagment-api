@@ -11,6 +11,7 @@ import { initializeCronJobs } from "./config/cron";
 import mainRouter from "./routes";
 
 dotenv.config();
+const port = process.env.PORT || 3000;
 
 const app: Express = express();
 
@@ -41,7 +42,9 @@ app.use("/api-docs", swaggerRoutes);
 app.get("/health", (req: Request, res: Response) => {
   res.status(200).json({ status: "OK" });
 });
-
+app.listen(port, () => {
+  logger.info(`🚀 Server running on port ${port}`);
+}); 
 prisma.$connect().then(() => {
   logger.info("⚡️ Connected to the database");
 });

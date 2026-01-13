@@ -9,10 +9,16 @@ export class SermonMediaController {
     static createSermon = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
         const result = await SermonMediaService.createSermon({
-            ...data,
+            title: data.title,
+            theme: data.theme,
+            scripture: data.scripture,
+            audioUrl: data.audioUrl,
+            videoUrl: data.videoUrl,
+            text: data.text,
+            tags: data.tags,
             preacher: { connect: { id: data.preacherId } },
             service: data.serviceId ? { connect: { id: data.serviceId } } : undefined,
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 
@@ -65,10 +71,12 @@ export class SermonMediaController {
     static createMedia = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
         const result = await SermonMediaService.createMedia({
-            ...data,
+            url: data.url,
+            type: data.type,
+            title: data.title,
             sermon: data.sermonId ? { connect: { id: data.sermonId } } : undefined,
             user: data.userId ? { connect: { id: data.userId } } : undefined,
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 

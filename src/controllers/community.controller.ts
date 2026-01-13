@@ -9,10 +9,13 @@ export class CommunityController {
     static createEvent = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
         const result = await CommunityService.createEvent({
-            ...data,
+            title: data.title,
+            description: data.description,
+            eventType: data.eventType,
+            location: data.location,
             date: new Date(data.date),
             organizer: { connect: { id: req.user!.id } },
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 

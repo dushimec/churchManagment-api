@@ -9,9 +9,10 @@ export class PastoralController {
     static createPrayerRequest = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
         const result = await PastoralService.createPrayerRequest({
-            ...data,
+            request: data.request,
+            isPrivate: data.isPrivate,
             member: { connect: { id: req.user!.id } },
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 
@@ -57,11 +58,12 @@ export class PastoralController {
     static createCounselingAppointment = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
         const result = await PastoralService.createCounselingAppointment({
-            ...data,
+            purpose: data.purpose,
+            duration: Number(data.duration),
             date: new Date(data.date),
             member: { connect: { id: req.user!.id } },
             pastor: { connect: { id: data.pastorId } },
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 
