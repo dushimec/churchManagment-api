@@ -7,7 +7,7 @@ import { RequestStatus } from "@prisma/client";
 export class CertificationRequestController {
     // Marriage Requests
     static createMarriageRequest = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await CertificationRequestService.createMarriageRequest({
             ...data,
             weddingDate: new Date(data.weddingDate),
@@ -51,7 +51,7 @@ export class CertificationRequestController {
 
     // Baptism Requests
     static createBaptismRequest = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await CertificationRequestService.createBaptismRequest({
             ...data,
             dateOfBirth: new Date(data.dateOfBirth),

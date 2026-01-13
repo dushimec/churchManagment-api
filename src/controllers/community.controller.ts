@@ -7,7 +7,7 @@ import { EventType } from "@prisma/client";
 export class CommunityController {
     // Events
     static createEvent = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await CommunityService.createEvent({
             ...data,
             date: new Date(data.date),

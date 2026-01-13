@@ -7,7 +7,7 @@ import { AssetType } from "@prisma/client";
 export class SermonMediaController {
     // Sermons
     static createSermon = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await SermonMediaService.createSermon({
             ...data,
             preacher: { connect: { id: data.preacherId } },
@@ -63,7 +63,7 @@ export class SermonMediaController {
 
     // Media
     static createMedia = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await SermonMediaService.createMedia({
             ...data,
             sermon: data.sermonId ? { connect: { id: data.sermonId } } : undefined,

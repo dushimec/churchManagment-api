@@ -6,7 +6,7 @@ import { ContributionType, PaymentMethod } from "@prisma/client";
 
 export class FinancialController {
     static createContribution = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await FinancialService.createContribution({
             ...data,
             amount: new Number(data.amount) as any,
