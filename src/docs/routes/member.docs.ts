@@ -14,7 +14,7 @@
  *     tags:
  *       - Members
  *     security:
- *       - Authentication: []
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -114,8 +114,8 @@
  *     description: Retrieve a paginated list of all members, with search and sorting.
  *     tags:
  *       - Members
- *   security:
- *     - Authentication: []
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: page
@@ -182,8 +182,8 @@
  *     description: Retrieve a single member by their unique ID.
  *     tags:
  *       - Members
- *   security:
- *     - Authentication: []
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -220,7 +220,7 @@
  *     tags:
  *       - Members
  *     security:
- *       - Authentication: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
@@ -327,7 +327,7 @@
  *     tags:
  *       - Members
  *     security:
- *       - Authentication: []
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id

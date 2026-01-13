@@ -7,14 +7,18 @@ import { RequestStatus } from "@prisma/client";
 export class CertificationRequestController {
     // Marriage Requests
     static createMarriageRequest = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await CertificationRequestService.createMarriageRequest({
-            ...data,
+            witness1Name: data.witness1Name,
+            witness1Phone: data.witness1Phone,
+            witness2Name: data.witness2Name,
+            witness2Phone: data.witness2Phone,
             weddingDate: new Date(data.weddingDate),
+            location: data.location,
             bride: { connect: { id: data.brideId } },
             groom: { connect: { id: data.groomId } },
             requester: { connect: { id: req.user!.id } },
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 
@@ -51,12 +55,12 @@ export class CertificationRequestController {
 
     // Baptism Requests
     static createBaptismRequest = catchAsync(async (req: Request, res: Response) => {
-        const data = matchedData(req);
+        const data = matchedData(req) as any;
         const result = await CertificationRequestService.createBaptismRequest({
-            ...data,
+            childName: data.childName,
             dateOfBirth: new Date(data.dateOfBirth),
             requester: { connect: { id: req.user!.id } },
-        });
+        } as any);
         res.status(201).json({ success: true, data: result });
     });
 

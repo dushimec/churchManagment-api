@@ -1,6 +1,6 @@
 // src/validations/auth.validation.ts
 
-import { body, param, query } from "express-validator";
+import { body } from "express-validator";
 
 export const registerValidation = [
   body("firstName")
@@ -59,27 +59,3 @@ export const loginValidation = [
     .isString()
     .withMessage("Password must be a string"),
 ];
-
-// Optional: Reusable validation handler (if you want to send formatted errors)
-import { validationResult } from "express-validator";
-
-// If AppError is not typed, add this interface for TypeScript:
-export class AppError extends Error {
-  statusCode: number;
-  constructor(message: string, statusCode: number) {
-    super(message);
-    this.statusCode = statusCode;
-    Object.setPrototypeOf(this, AppError.prototype);
-  }
-}
-import { Request, Response, NextFunction } from "express";
-
-export const validate = (req: Request, res: Response, next: NextFunction) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    // Return first error for simplicity, or map all
-    const firstError = errors.array()[0];
-    return next(new AppError(firstError.msg, 400));
-  }
-  next();
-};
