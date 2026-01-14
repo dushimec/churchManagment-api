@@ -14,7 +14,6 @@ const router = Router();
 // Marriage Requests
 router.post(
     "/marriage",
-    verifyAccess,
     marriageRequestValidator,
     validate,
     CertificationRequestController.createMarriageRequest
@@ -22,7 +21,6 @@ router.post(
 
 router.get(
     "/marriage",
-    verifyAccess,
     CertificationRequestController.getAllMarriageRequests
 );
 
@@ -38,7 +36,6 @@ router.patch(
 // Baptism Requests
 router.post(
     "/baptism",
-    verifyAccess,
     baptismRequestValidator,
     validate,
     CertificationRequestController.createBaptismRequest
@@ -46,7 +43,6 @@ router.post(
 
 router.get(
     "/baptism",
-    verifyAccess,
     CertificationRequestController.getAllBaptismRequests
 );
 
