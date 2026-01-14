@@ -19,13 +19,12 @@ router.post(
 
 router.get(
     "/",
-    verifyAccess,
+    
     CommunityController.getAllEvents
 );
 
 router.get(
     "/:id",
-    verifyAccess,
     CommunityController.getEventById
 );
 
@@ -48,13 +47,11 @@ router.delete(
 // Registration Routes
 router.post(
     "/:id/register",
-    verifyAccess,
     CommunityController.registerForEvent
 );
 
 router.delete(
     "/:id/unregister",
-    verifyAccess,
     CommunityController.unregisterFromEvent
 );
 
