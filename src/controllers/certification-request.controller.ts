@@ -8,7 +8,7 @@ export class CertificationRequestController {
     // Marriage Requests
     static createMarriageRequest = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
-        const result = await CertificationRequestService.createMarriageRequest({
+        const requestData: any = {
             witness1Name: data.witness1Name,
             witness1Phone: data.witness1Phone,
             witness2Name: data.witness2Name,
@@ -17,8 +17,17 @@ export class CertificationRequestController {
             location: data.location,
             bride: { connect: { id: data.brideId } },
             groom: { connect: { id: data.groomId } },
-            requester: { connect: { id: req.user!.id } },
-        } as any);
+        };
+
+        // Only add requester if user is authenticated
+        if (req.user?.id) {
+            requestData.requester = { connect: { id: req.user.id } };
+        } else {
+            // Use bride as requester if no authenticated user
+            requestData.requester = { connect: { id: data.brideId } };
+        }
+
+        const result = await CertificationRequestService.createMarriageRequest(requestData);
         res.status(201).json({ success: true, data: result });
     });
 
@@ -56,11 +65,19 @@ export class CertificationRequestController {
     // Baptism Requests
     static createBaptismRequest = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
-        const result = await CertificationRequestService.createBaptismRequest({
+        const requestData: any = {
             childName: data.childName,
             dateOfBirth: new Date(data.dateOfBirth),
-            requester: { connect: { id: req.user!.id } },
-        } as any);
+        };
+
+        // Only add requester if user is authenticated, otherwise use a placeholder
+        if (req.user?.id) {
+            requestData.requester = { connect: { id: req.user.id } };
+        } else if (data.requesterId) {
+            requestData.requester = { connect: { id: data.requesterId } };
+        }
+
+        const result = await CertificationRequestService.createBaptismRequest(requestData);
         res.status(201).json({ success: true, data: result });
     });
 
