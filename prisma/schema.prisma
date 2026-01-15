@@ -248,8 +248,8 @@ model MarriageRequest {
   documentsSubmitted String[]
   brideIdDocumentUrl String?
   groomIdDocumentUrl String?
-  requester          User?         @relation("MarriageRequester", fields: [requesterId], references: [id])
-  requesterId        String?
+  requester          User          @relation("MarriageRequester", fields: [requesterId], references: [id])
+  requesterId        String
   status             RequestStatus @default(PENDING)
   approvedBy         User?         @relation("MarriageApprover", fields: [approvedById], references: [id])
   approvedById       String?
@@ -265,8 +265,8 @@ model BaptismRequest {
   id             String        @id @default(cuid())
   childName      String
   dateOfBirth    DateTime
-  requester      User?         @relation("BaptismRequester", fields: [requesterId], references: [id])
-  requesterId    String?
+  requester      User          @relation("BaptismRequester", fields: [requesterId], references: [id])
+  requesterId    String
   status         RequestStatus @default(PENDING)
   approvedBy     User?         @relation("BaptismApprover", fields: [approvedById], references: [id])
   approvedById   String?

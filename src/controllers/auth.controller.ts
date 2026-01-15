@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { NextFunction, Request, Response } from "express";
 import { prisma } from "../config/database";
 import { AppError } from "../utils/AppError";
-import { logger } from "../utils/logger";
 import { catchAsync } from "../utils/CatchAsync";
 import { Role, AssetType, AssetCategory, Language } from "@prisma/client";
 import { generateVerificationCode } from "../utils/generateVerificatinCode";
@@ -111,30 +110,16 @@ export class AuthController {
       },
     });
 
-    let emailSent = false;
-    try {
-      await sendVerificationEmail(email, verificationCode.toString(), isEN ? Language.EN : Language.FR, "signup");
-      emailSent = true;
-    } catch (error) {
-      logger.error(`Failed to send verification email to ${email}:`, error);
-    }
+    await sendVerificationEmail(email, verificationCode.toString(), isEN ? Language.EN : Language.FR, "signup");
 
     const accessToken = generateToken(user.id);
     const refreshToken = generateRefreshToken(user.id, 0);
 
-    let successMessage = isEN
-      ? "Registration successful. Please check your email for verification."
-      : "Inscription réussie. Veuillez vérifier votre courriel pour vérification.";
-
-    if (!emailSent) {
-      successMessage = isEN
-        ? "Registration successful, but we couldn't send the verification email. Please contact support."
-        : "Inscription réussie, mais nous n'avons pas pu envoyer l'e-mail de vérification. Veuillez contacter le support.";
-    }
-
     res.status(201).json({
       success: true,
-      message: successMessage,
+      message: isEN
+        ? "Registration successful. Please check your email for verification."
+        : "Inscription réussie. Veuillez vérifier votre courriel pour vérification.",
       accessToken,
       refreshToken,
       user: {
@@ -384,7 +369,7 @@ export class AuthController {
   static forgotPassword = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
-
+    
     if (!user || user.isDeleted) {
       return res.status(200).json({
         success: true,
