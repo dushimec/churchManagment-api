@@ -239,6 +239,8 @@ model MarriageRequest {
   brideId            String
   groom              User          @relation("Groom", fields: [groomId], references: [id])
   groomId            String
+  brideEmail         String
+  groomEmail         String
   weddingDate        DateTime
   location           String?
   witness1Name       String
@@ -254,6 +256,7 @@ model MarriageRequest {
   approvedBy         User?         @relation("MarriageApprover", fields: [approvedById], references: [id])
   approvedById       String?
   approvedAt         DateTime?
+  rejectionReason   String?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
@@ -262,19 +265,21 @@ model MarriageRequest {
 }
 
 model BaptismRequest {
-  id             String        @id @default(cuid())
-  childName      String
-  dateOfBirth    DateTime
-  requester      User          @relation("BaptismRequester", fields: [requesterId], references: [id])
-  requesterId    String
-  status         RequestStatus @default(PENDING)
-  approvedBy     User?         @relation("BaptismApprover", fields: [approvedById], references: [id])
-  approvedById   String?
-  approvedAt     DateTime?
-  scheduledDate  DateTime?
-  certificateUrl String?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id               String        @id @default(cuid())
+  childName        String
+  dateOfBirth      DateTime
+  requesterEmail   String
+  requester        User          @relation("BaptismRequester", fields: [requesterId], references: [id])
+  requesterId      String
+  status           RequestStatus @default(PENDING)
+  approvedBy       User?         @relation("BaptismApprover", fields: [approvedById], references: [id])
+  approvedById     String?
+  approvedAt       DateTime?
+  scheduledDate    DateTime?
+  certificateUrl   String?
+  rejectionReason  String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
 
   @@map("baptism_requests")
 }
@@ -367,22 +372,24 @@ enum RecommendationType {
 }
 
 model YouthForm {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   idNumber    String
   phone       String
+  email       String
   district    String
   cell        String
   churchCell  String
   youthFamily String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@map("youth_forms")
 }
 
 model CellRecommendation {
-  id             String   @id @default(cuid())
+  id             String        @id @default(cuid())
   names          String
   idNumber       String
   phone          String
@@ -390,8 +397,9 @@ model CellRecommendation {
   district       String
   cell           String
   churchCellName String
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  status         RequestStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   @@map("cell_recommendations")
 }
@@ -408,6 +416,7 @@ model ChurchRecommendation {
   cellRecommendation  String
   youthRecommendation String? // Only for YOUTH type
   passportPhoto       String? // Only for YOUTH type (URL/Path)
+  status              RequestStatus      @default(PENDING)
   createdAt           DateTime           @default(now())
   updatedAt           DateTime           @updatedAt
 
@@ -415,19 +424,20 @@ model ChurchRecommendation {
 }
 
 model BaptismCertification {
-  id          String   @id @default(cuid())
+  id          String        @id @default(cuid())
   name        String
   email       String
   phone       String
   baptismDate DateTime
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  status      RequestStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 
   @@map("baptism_certifications")
 }
 
 model MarriageCertificate {
-  id            String   @id @default(cuid())
+  id            String        @id @default(cuid())
   brideName     String
   groomName     String
   brideEmail    String
@@ -436,11 +446,12 @@ model MarriageCertificate {
   groomPhone    String
   brideAddress  String
   groomAddress  String
-  marenName    String   // M
-  parenName    String   // P
+  marenName    String        // M
+  parenName    String        // P
   parentAddress String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  status       RequestStatus  @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
   @@map("marriage_certificates")
 }

@@ -622,3 +622,113 @@ export const sendAccountRecoveryEmail = async (
 
   return await sendEmail(email, subject, baseEmailTemplate(content, language));
 };
+
+export const sendFormConfirmationEmail = async (
+  email: string,
+  formType: string,
+  formData: any,
+  language: Language = Language.EN
+): Promise<boolean> => {
+  const formTypeLabels: Record<string, { en: string; fr: string }> = {
+    'youth': { en: 'Youth Form', fr: 'Formulaire Jeunesse' },
+    'cell-recommendation': { en: 'Cell Recommendation', fr: 'Recommandation de Cellule' },
+    'church-recommendation': { en: 'Church Recommendation', fr: 'Recommandation de l\'Église' },
+    'baptism-certification': { en: 'Baptism Certificate', fr: 'Certificat de Baptême' },
+    'marriage-certificate': { en: 'Marriage Certificate', fr: 'Certificat de Mariage' },
+    'wedding-request': { en: 'Wedding Service Request', fr: 'Demande de Service de Mariage' },
+    'child-dedication': { en: 'Child Dedication Request', fr: 'Demande de Dédicace d\'Enfant' },
+    'marriage': { en: 'Marriage Request', fr: 'Demande de Mariage' },
+    'baptism': { en: 'Baptism Request', fr: 'Demande de Baptême' },
+  };
+
+  const labels = formTypeLabels[formType] || { en: 'Form', fr: 'Formulaire' };
+  const subject =
+    language === Language.FR
+      ? `Votre demande de ${labels.fr} a été approuvée`
+      : `Your ${labels.en} Request Has Been Approved`;
+
+  const content =
+    language === Language.FR
+      ? `
+      <h2>Demande approuvée ✅</h2>
+      
+      <p>Nous sommes heureux de vous informer que votre demande de <strong>${labels.fr}</strong> a été approuvée.</p>
+      
+      <p>Votre demande a été examinée et approuvée par notre équipe pastorale. Vous recevrez bientôt des instructions supplémentaires concernant les prochaines étapes.</p>
+      
+      <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+      
+      <p>Que Dieu vous bénisse,<br>L'équipe d'Église Évangélique de Restauration</p>
+    `
+      : `
+      <h2>Request Approved ✅</h2>
+      
+      <p>We are pleased to inform you that your <strong>${labels.en}</strong> request has been approved.</p>
+      
+      <p>Your request has been reviewed and approved by our pastoral team. You will receive further instructions regarding next steps soon.</p>
+      
+      <p>If you have any questions, please don't hesitate to contact us.</p>
+      
+      <p>God bless,<br>The Evangelical Restoration Church Team</p>
+    `;
+
+  return await sendEmail(email, subject, baseEmailTemplate(content, language));
+};
+
+export const sendFormRejectionEmail = async (
+  email: string,
+  formType: string,
+  reason: string | undefined,
+  language: Language = Language.EN
+): Promise<boolean> => {
+  const formTypeLabels: Record<string, { en: string; fr: string }> = {
+    'youth': { en: 'Youth Form', fr: 'Formulaire Jeunesse' },
+    'cell-recommendation': { en: 'Cell Recommendation', fr: 'Recommandation de Cellule' },
+    'church-recommendation': { en: 'Church Recommendation', fr: 'Recommandation de l\'Église' },
+    'baptism-certification': { en: 'Baptism Certificate', fr: 'Certificat de Baptême' },
+    'marriage-certificate': { en: 'Marriage Certificate', fr: 'Certificat de Mariage' },
+    'wedding-request': { en: 'Wedding Service Request', fr: 'Demande de Service de Mariage' },
+    'child-dedication': { en: 'Child Dedication Request', fr: 'Demande de Dédicace d\'Enfant' },
+    'marriage': { en: 'Marriage Request', fr: 'Demande de Mariage' },
+    'baptism': { en: 'Baptism Request', fr: 'Demande de Baptême' },
+  };
+
+  const labels = formTypeLabels[formType] || { en: 'Form', fr: 'Formulaire' };
+  const subject =
+    language === Language.FR
+      ? `Mise à jour concernant votre demande de ${labels.fr}`
+      : `Update Regarding Your ${labels.en} Request`;
+
+  const reasonSection = reason
+    ? language === Language.FR
+      ? `<blockquote><strong>Raison:</strong> ${reason}</blockquote>`
+      : `<blockquote><strong>Reason:</strong> ${reason}</blockquote>`
+    : '';
+
+  const content =
+    language === Language.FR
+      ? `
+      <h2>Demande non approuvée</h2>
+      
+      <p>Nous vous informons que votre demande de <strong>${labels.fr}</strong> n'a pas pu être approuvée à ce moment.</p>
+      
+      ${reasonSection}
+      
+      <p>Si vous avez des questions ou souhaitez discuter de cette décision, veuillez nous contacter. Nous sommes là pour vous aider.</p>
+      
+      <p>Que Dieu vous bénisse,<br>L'équipe d'Église Évangélique de Restauration</p>
+    `
+      : `
+      <h2>Request Not Approved</h2>
+      
+      <p>We regret to inform you that your <strong>${labels.en}</strong> request could not be approved at this time.</p>
+      
+      ${reasonSection}
+      
+      <p>If you have any questions or would like to discuss this decision, please contact us. We are here to help.</p>
+      
+      <p>God bless,<br>The Evangelical Restoration Church Team</p>
+    `;
+
+  return await sendEmail(email, subject, baseEmailTemplate(content, language));
+};

@@ -33,6 +33,20 @@ router.patch(
     CertificationRequestController.updateMarriageRequestStatus
 );
 
+router.patch(
+    "/marriage/:id/confirm",
+    verifyAccess,
+    restrictTo(Role.ADMIN, Role.PASTOR),
+    CertificationRequestController.confirmMarriageRequest
+);
+
+router.patch(
+    "/marriage/:id/reject",
+    verifyAccess,
+    restrictTo(Role.ADMIN, Role.PASTOR),
+    CertificationRequestController.rejectMarriageRequest
+);
+
 // Baptism Requests
 router.post(
     "/baptism",
@@ -53,6 +67,20 @@ router.patch(
     requestStatusValidator,
     validate,
     CertificationRequestController.updateBaptismRequestStatus
+);
+
+router.patch(
+    "/baptism/:id/confirm",
+    verifyAccess,
+    restrictTo(Role.ADMIN, Role.PASTOR),
+    CertificationRequestController.confirmBaptismRequest
+);
+
+router.patch(
+    "/baptism/:id/reject",
+    verifyAccess,
+    restrictTo(Role.ADMIN, Role.PASTOR),
+    CertificationRequestController.rejectBaptismRequest
 );
 
 export default router;

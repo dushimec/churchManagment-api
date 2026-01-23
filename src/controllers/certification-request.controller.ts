@@ -15,6 +15,8 @@ export class CertificationRequestController {
             witness2Phone: data.witness2Phone,
             weddingDate: new Date(data.weddingDate),
             location: data.location,
+            brideEmail: data.brideEmail,
+            groomEmail: data.groomEmail,
             bride: { connect: { id: data.brideId } },
             groom: { connect: { id: data.groomId } },
             requester: { connect: { id: req.user!.id } },
@@ -48,9 +50,9 @@ export class CertificationRequestController {
 
     static updateMarriageRequestStatus = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
-        const { status } = matchedData(req);
-        const result = await CertificationRequestService.updateMarriageRequestStatus(id, status, req.user!.id);
-        res.status(200).json({ success: true, data: result });
+        const { status, reason } = matchedData(req);
+        const result = await CertificationRequestService.updateMarriageRequestStatus(id, status, req.user!.id, reason);
+        res.status(200).json({ success: true, data: result, message: `Request ${status.toLowerCase()} successfully. Email notification sent.` });
     });
 
     // Baptism Requests
@@ -59,7 +61,8 @@ export class CertificationRequestController {
         const result = await CertificationRequestService.createBaptismRequest({
             childName: data.childName,
             dateOfBirth: new Date(data.dateOfBirth),
-            requester: { connect: { id: req.user!.id } },
+            requesterEmail: data.requesterEmail,
+            requester: { connect: { id: req.user!.id || data.requesterId } },
         } as any);
         res.status(201).json({ success: true, data: result });
     });
@@ -90,13 +93,41 @@ export class CertificationRequestController {
 
     static updateBaptismRequestStatus = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
-        const { status, scheduledDate } = matchedData(req);
+        const { status, scheduledDate, reason } = matchedData(req);
         const result = await CertificationRequestService.updateBaptismRequestStatus(
             id,
             status,
             req.user!.id,
-            scheduledDate ? new Date(scheduledDate) : undefined
+            scheduledDate ? new Date(scheduledDate) : undefined,
+            reason
         );
-        res.status(200).json({ success: true, data: result });
+        res.status(200).json({ success: true, data: result, message: `Request ${status.toLowerCase()} successfully. Email notification sent.` });
+    });
+
+    // Convenience methods for confirm/reject
+    static confirmMarriageRequest = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const result = await CertificationRequestService.updateMarriageRequestStatus(id, RequestStatus.APPROVED, req.user!.id);
+        res.status(200).json({ success: true, data: result, message: 'Marriage request confirmed successfully. Email notification sent.' });
+    });
+
+    static rejectMarriageRequest = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const { reason } = req.body;
+        const result = await CertificationRequestService.updateMarriageRequestStatus(id, RequestStatus.REJECTED, req.user!.id, reason);
+        res.status(200).json({ success: true, data: result, message: 'Marriage request rejected successfully. Email notification sent.' });
+    });
+
+    static confirmBaptismRequest = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const result = await CertificationRequestService.updateBaptismRequestStatus(id, RequestStatus.APPROVED, req.user!.id);
+        res.status(200).json({ success: true, data: result, message: 'Baptism request confirmed successfully. Email notification sent.' });
+    });
+
+    static rejectBaptismRequest = catchAsync(async (req: Request, res: Response) => {
+        const { id } = req.params;
+        const { reason } = req.body;
+        const result = await CertificationRequestService.updateBaptismRequestStatus(id, RequestStatus.REJECTED, req.user!.id, undefined, reason);
+        res.status(200).json({ success: true, data: result, message: 'Baptism request rejected successfully. Email notification sent.' });
     });
 }

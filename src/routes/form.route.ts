@@ -44,4 +44,8 @@ router.get("/wedding-request", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR)
 router.post("/child-dedication", validator.childDedicationRequestValidator, FormController.createChildDedicationRequest);
 router.get("/child-dedication", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR), FormController.getAllChildDedicationRequests);
 
+// Confirm/Reject forms
+router.patch("/:formType/:formId/confirm", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR), FormController.confirmForm);
+router.patch("/:formType/:formId/reject", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR), FormController.rejectForm);
+
 export default router;

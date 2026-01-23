@@ -1,5 +1,7 @@
-import { Prisma } from "@prisma/client";
+import { Prisma, RequestStatus } from "@prisma/client";
 import { prisma } from "../config/database";
+import { sendFormConfirmationEmail, sendFormRejectionEmail } from "../config/email";
+import { Language } from "@prisma/client";
 
 export class CertificationRequestService {
     // Marriage Requests
@@ -30,15 +32,60 @@ export class CertificationRequestService {
         return { data, total };
     }
 
-    public static async updateMarriageRequestStatus(id: string, status: any, approvedById?: string) {
-        return await prisma.marriageRequest.update({
+    public static async updateMarriageRequestStatus(id: string, status: any, approvedById?: string, rejectionReason?: string) {
+        const updateData: any = {
+            status,
+            approvedById,
+            approvedAt: status === RequestStatus.APPROVED ? new Date() : undefined,
+        };
+
+        if (status === RequestStatus.REJECTED && rejectionReason) {
+            updateData.rejectionReason = rejectionReason;
+        }
+
+        const result = await prisma.marriageRequest.update({
             where: { id },
-            data: {
-                status,
-                approvedById,
-                approvedAt: status === "APPROVED" ? new Date() : undefined,
+            data: updateData,
+            include: {
+                bride: { select: { language: true } },
             },
         });
+
+        // Send email notifications
+        const language = result.bride.language || Language.EN;
+        if (status === RequestStatus.APPROVED) {
+            if (result.brideEmail) {
+                try {
+                    await sendFormConfirmationEmail(result.brideEmail, 'marriage', result, language);
+                } catch (error) {
+                    console.error(`Failed to send confirmation email to bride:`, error);
+                }
+            }
+            if (result.groomEmail) {
+                try {
+                    await sendFormConfirmationEmail(result.groomEmail, 'marriage', result, language);
+                } catch (error) {
+                    console.error(`Failed to send confirmation email to groom:`, error);
+                }
+            }
+        } else if (status === RequestStatus.REJECTED) {
+            if (result.brideEmail) {
+                try {
+                    await sendFormRejectionEmail(result.brideEmail, 'marriage', rejectionReason, language);
+                } catch (error) {
+                    console.error(`Failed to send rejection email to bride:`, error);
+                }
+            }
+            if (result.groomEmail) {
+                try {
+                    await sendFormRejectionEmail(result.groomEmail, 'marriage', rejectionReason, language);
+                } catch (error) {
+                    console.error(`Failed to send rejection email to groom:`, error);
+                }
+            }
+        }
+
+        return result;
     }
 
     // Baptism Requests
@@ -67,15 +114,46 @@ export class CertificationRequestService {
         return { data, total };
     }
 
-    public static async updateBaptismRequestStatus(id: string, status: any, approvedById?: string, scheduledDate?: Date) {
-        return await prisma.baptismRequest.update({
+    public static async updateBaptismRequestStatus(id: string, status: any, approvedById?: string, scheduledDate?: Date, rejectionReason?: string) {
+        const updateData: any = {
+            status,
+            approvedById,
+            scheduledDate,
+            approvedAt: status === RequestStatus.APPROVED ? new Date() : undefined,
+        };
+
+        if (status === RequestStatus.REJECTED && rejectionReason) {
+            updateData.rejectionReason = rejectionReason;
+        }
+
+        const result = await prisma.baptismRequest.update({
             where: { id },
-            data: {
-                status,
-                approvedById,
-                scheduledDate,
-                approvedAt: status === "APPROVED" ? new Date() : undefined,
+            data: updateData,
+            include: {
+                requester: { select: { language: true } },
             },
         });
+
+        // Send email notification
+        const language = result.requester.language || Language.EN;
+        if (status === RequestStatus.APPROVED) {
+            if (result.requesterEmail) {
+                try {
+                    await sendFormConfirmationEmail(result.requesterEmail, 'baptism', result, language);
+                } catch (error) {
+                    console.error(`Failed to send confirmation email:`, error);
+                }
+            }
+        } else if (status === RequestStatus.REJECTED) {
+            if (result.requesterEmail) {
+                try {
+                    await sendFormRejectionEmail(result.requesterEmail, 'baptism', rejectionReason, language);
+                } catch (error) {
+                    console.error(`Failed to send rejection email:`, error);
+                }
+            }
+        }
+
+        return result;
     }
 }
