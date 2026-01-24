@@ -1,4 +1,4 @@
-import {Language} from "@prisma/client"
+import { Language } from "@prisma/client"
 import nodemailer from "nodemailer";
 import { logger } from "../utils/logger";
 import moment from "moment";
@@ -142,24 +142,21 @@ const baseEmailTemplate = (
       <!-- LOGO -->
       <img src="${process.env.LOGO_URL}" alt="Evangelical Restoration Church" class="logo" />
       <h1>Evangelical Restoration Church</h1>
-      <p>${
-        language === Language.FR
-          ? "Rétablissant les âmes, ensemble en Christ"
-          : "Restoring Souls, Together in Christ"
-      }</p>
+      <p>${language === Language.FR
+    ? "Rétablissant les âmes, ensemble en Christ"
+    : "Restoring Souls, Together in Christ"
+  }</p>
     </div>
     <div class="content">
       ${content}
     </div>
     <div class="footer">
-      <p>© ${new Date().getFullYear()} Evangelical Restoration Church. ${
-  language === Language.FR ? "Tous droits réservés." : "All rights reserved"
-}.</p>
-      <p>${
-        language === Language.FR
-          ? "Où la grâce rencontre la transformation."
-          : "Where grace meets transformation."
-      }</p>
+      <p>© ${new Date().getFullYear()} Evangelical Restoration Church. ${language === Language.FR ? "Tous droits réservés." : "All rights reserved"
+  }.</p>
+      <p>${language === Language.FR
+    ? "Où la grâce rencontre la transformation."
+    : "Where grace meets transformation."
+  }</p>
     </div>
   </div>
 </body>
@@ -443,46 +440,38 @@ export const sendDonationReceiptEmail = async (
     <div style="max-width: 650px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
       <div class="header" style="background: #B91C1C; color: white; padding: 30px; border-radius: 12px 12px 0 0;">
         <h1 style="margin: 0; font-size: 32px;">Evangelical Restoration Church</h1>
-        <p style="margin: 10px 0 0 0; font-size: 15px; opacity: 0.95;">${
-          language === Language.FR ? "Reçu de don" : "Donation Receipt"
-        }</p>
+        <p style="margin: 10px 0 0 0; font-size: 15px; opacity: 0.95;">${language === Language.FR ? "Reçu de don" : "Donation Receipt"
+    }</p>
       </div>
 
       <div class="content" style="padding: 40px 30px; background: white;">
         <div style="background: #FFF5F5; padding: 20px; border-radius: 8px; margin-bottom: 30px; border: 1px solid #f0d0d0;">
-          <h2 style="margin: 0; color: #B91C1C; font-size: 22px;">${
-            language === Language.FR ? "REÇU" : "RECEIPT"
-          } #${receiptNumber}</h2>
+          <h2 style="margin: 0; color: #B91C1C; font-size: 22px;">${language === Language.FR ? "REÇU" : "RECEIPT"
+    } #${receiptNumber}</h2>
         </div>
 
         <div style="display: flex; justify-content: space-between; margin-bottom: 30px; flex-wrap: wrap; gap: 20px;">
           <div>
-            <p><strong>${
-              language === Language.FR ? "Donateur" : "Donor"
-            }:</strong> ${donorName}</p>
-            <p><strong>${
-              language === Language.FR ? "Date" : "Date"
-            }:</strong> ${donationDate}</p>
+            <p><strong>${language === Language.FR ? "Donateur" : "Donor"
+    }:</strong> ${donorName}</p>
+            <p><strong>${language === Language.FR ? "Date" : "Date"
+    }:</strong> ${donationDate}</p>
           </div>
           <div>
-            <p><strong>${
-              language === Language.FR ? "Méthode" : "Method"
-            }:</strong> ${paymentMethod}</p>
-            <p><strong>${
-              language === Language.FR ? "Devise" : "Currency"
-            }:</strong> ${currency}</p>
+            <p><strong>${language === Language.FR ? "Méthode" : "Method"
+    }:</strong> ${paymentMethod}</p>
+            <p><strong>${language === Language.FR ? "Devise" : "Currency"
+    }:</strong> ${currency}</p>
           </div>
         </div>
 
         <table style="width: 100%; border-collapse: collapse; margin: 30px 0;">
           <thead>
             <tr>
-              <th style="padding: 14px; text-align: left; border-bottom: 2px solid #B91C1C; color: #B91C1C;">${
-                language === Language.FR ? "Description" : "Description"
-              }</th>
-              <th style="padding: 14px; text-align: right; border-bottom: 2px solid #B91C1C; color: #B91C1C;">${
-                language === Language.FR ? "Montant" : "Amount"
-              }</th>
+              <th style="padding: 14px; text-align: left; border-bottom: 2px solid #B91C1C; color: #B91C1C;">${language === Language.FR ? "Description" : "Description"
+    }</th>
+              <th style="padding: 14px; text-align: right; border-bottom: 2px solid #B91C1C; color: #B91C1C;">${language === Language.FR ? "Montant" : "Amount"
+    }</th>
             </tr>
           </thead>
           <tbody>
@@ -492,9 +481,8 @@ export const sendDonationReceiptEmail = async (
 
         <div style="text-align: right; padding: 20px 0; border-top: 3px solid #B91C1C; margin-top: 20px;">
           <div style="font-size: 22px; font-weight: 800; color: #B91C1C;">
-            <span style="margin-right: 30px;">${
-              language === Language.FR ? "TOTAL" : "TOTAL"
-            }:</span>
+            <span style="margin-right: 30px;">${language === Language.FR ? "TOTAL" : "TOTAL"
+    }:</span>
             <span>${formatCurrency(totalAmount)}</span>
           </div>
         </div>
@@ -505,14 +493,12 @@ export const sendDonationReceiptEmail = async (
       </div>
 
       <div class="footer" style="text-align: center; padding: 30px; background: #f8f9fa; color: #555; font-size: 13px; border-radius: 0 0 12px 12px;">
-        <p>© ${new Date().getFullYear()} Evangelical Restoration Church. ${
-    language === Language.FR ? "Tous droits réservés." : "All rights reserved"
-  }.</p>
-        <p>${
-          language === Language.FR
-            ? "Où la grâce rencontre la transformation."
-            : "Where grace meets transformation."
-        }</p>
+        <p>© ${new Date().getFullYear()} Evangelical Restoration Church. ${language === Language.FR ? "Tous droits réservés." : "All rights reserved"
+    }.</p>
+        <p>${language === Language.FR
+      ? "Où la grâce rencontre la transformation."
+      : "Where grace meets transformation."
+    }</p>
       </div>
     </div>
   `;
@@ -618,6 +604,50 @@ export const sendAccountRecoveryEmail = async (
       <a href="${process.env.FRONTEND_URL}/dashboard" class="button">Go to My Account</a>
       
       <p>With love in Christ,<br>The Evangelical Restoration Church Team</p>
+    `;
+
+  return await sendEmail(email, subject, baseEmailTemplate(content, language));
+};
+
+export const sendFormStatusEmail = async (
+  email: string,
+  name: string,
+  formType: string,
+  status: "APPROVED" | "REJECTED",
+  language: Language = Language.EN,
+  reason?: string
+): Promise<boolean> => {
+  const isApproved = status === "APPROVED";
+  const subject =
+    language === Language.FR
+      ? `Mise à jour de votre demande - ${formType} - ${isApproved ? "Approuvée" : "Rejetée"}`
+      : `Update on your request - ${formType} - ${isApproved ? "Approved" : "Rejected"}`;
+
+  const content =
+    language === Language.FR
+      ? `
+      <h2>Mise à jour du statut de votre demande</h2>
+      
+      <p>Cher(e) ${name},</p>
+      <p>Votre demande de <strong>${formType}</strong> a été <strong>${isApproved ? "approuvée ✅" : "rejetée ❌"}</strong>.</p>
+      
+      ${!isApproved && reason ? `<blockquote>Raison : ${reason}</blockquote>` : ""}
+      
+      <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+      
+      <p>Cordialement,<br>L'équipe d'Église Évangélique de Restauration</p>
+    `
+      : `
+      <h2>Request Status Update</h2>
+      
+      <p>Dear ${name},</p>
+      <p>Your request for <strong>${formType}</strong> has been <strong>${isApproved ? "approved ✅" : "rejected ❌"}</strong>.</p>
+      
+      ${!isApproved && reason ? `<blockquote>Reason: ${reason}</blockquote>` : ""}
+      
+      <p>If you have any questions, please feel free to contact us.</p>
+      
+      <p>Best regards,<br>The Evangelical Restoration Church Team</p>
     `;
 
   return await sendEmail(email, subject, baseEmailTemplate(content, language));

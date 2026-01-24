@@ -7,9 +7,9 @@ export const sermonValidator = [
         .notEmpty()
         .withMessage("Title is required"),
     body("preacherId")
+        .optional()
         .isString()
-        .notEmpty()
-        .withMessage("Preacher ID is required"),
+        .withMessage("Preacher ID must be a string"),
     body("serviceId")
         .optional()
         .isString()
@@ -46,8 +46,13 @@ export const mediaValidator = [
         .isString()
         .withMessage("Title must be a string"),
     body("url")
-        .isURL()
-        .withMessage("URL must be a valid URL"),
+        .optional()
+        .isString()
+        .withMessage("URL must be a string"),
+    body("file")
+        .optional()
+        .isString()
+        .withMessage("File must be a base64 string"),
     body("type")
         .isIn(Object.values(AssetType))
         .withMessage(`Type must be one of: ${Object.values(AssetType).join(", ")}`),

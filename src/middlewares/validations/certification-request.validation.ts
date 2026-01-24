@@ -2,14 +2,54 @@ import { body } from "express-validator";
 import { RequestStatus } from "@prisma/client";
 
 export const marriageRequestValidator = [
-    body("brideId")
+    body("brideNationalId")
         .isString()
         .notEmpty()
-        .withMessage("Bride ID is required"),
-    body("groomId")
+        .withMessage("Bride National ID is required"),
+    body("groomNationalId")
         .isString()
         .notEmpty()
-        .withMessage("Groom ID is required"),
+        .withMessage("Groom National ID is required"),
+    body("requesterNationalId")
+        .optional()
+        .isString(),
+    body("brideId").optional().isString(),
+    body("groomId").optional().isString(),
+    body("requesterId").optional().isString(),
+    body("brideName")
+        .isString()
+        .notEmpty()
+
+        .withMessage("Bride name is required"),
+    body("bridePhone")
+        .isString()
+        .notEmpty()
+        .withMessage("Bride phone is required"),
+    body("brideEmail")
+        .optional()
+        .isEmail()
+        .withMessage("Valid bride email is required"),
+    body("groomName")
+        .isString()
+        .notEmpty()
+        .withMessage("Groom name is required"),
+    body("groomPhone")
+        .isString()
+        .notEmpty()
+        .withMessage("Groom phone is required"),
+    body("groomEmail")
+        .optional()
+        .isEmail()
+        .withMessage("Valid groom email is required"),
+    body("requesterName")
+        .optional()
+        .isString(),
+    body("requesterPhone")
+        .optional()
+        .isString(),
+    body("requesterEmail")
+        .isEmail()
+        .withMessage("Valid requester email is required for notification"),
     body("weddingDate")
         .isISO8601()
         .withMessage("Valid wedding date is required")
@@ -49,6 +89,18 @@ export const baptismRequestValidator = [
     body("dateOfBirth")
         .isISO8601()
         .withMessage("Valid date of birth is required"),
+    body("requesterName")
+        .optional()
+        .isString(),
+    body("requesterPhone")
+        .optional()
+        .isString(),
+    body("requesterEmail")
+        .isEmail()
+        .withMessage("Valid requester email is required for notification"),
+    body("requesterId")
+        .optional()
+        .isString(),
 ];
 
 export const requestStatusValidator = [

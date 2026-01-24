@@ -79,6 +79,13 @@ export class SermonMediaService {
         return { data, total };
     }
 
+    public static async updateMedia(id: string, data: Prisma.MediaUpdateInput) {
+        return await prisma.media.update({
+            where: { id },
+            data,
+        });
+    }
+
     public static async deleteMedia(id: string) {
         return await prisma.media.delete({
             where: { id },

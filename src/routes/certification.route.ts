@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { CertificationRequestController } from "../controllers/certification-request.controller";
-import { verifyAccess, restrictTo } from "../middlewares/authMiddleware";
+import { verifyAccess, restrictTo, protectOptional } from "../middlewares/authMiddleware";
 import { Role } from "@prisma/client";
 import { validate } from "../middlewares/validate";
 import {
@@ -14,6 +14,7 @@ const router = Router();
 // Marriage Requests
 router.post(
     "/marriage",
+    protectOptional,
     marriageRequestValidator,
     validate,
     CertificationRequestController.createMarriageRequest
@@ -36,6 +37,7 @@ router.patch(
 // Baptism Requests
 router.post(
     "/baptism",
+    protectOptional,
     baptismRequestValidator,
     validate,
     CertificationRequestController.createBaptismRequest

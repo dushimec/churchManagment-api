@@ -7,10 +7,10 @@ const svgToDataUrl = (svgContent: string): string => {
 };
 
 cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const uploadToCloudinary = async (
   file: string,
@@ -29,8 +29,9 @@ export const uploadToCloudinary = async (
       });
     };
     return await cloudinary.uploader.upload(file, {
-        folder: "churchDocument/profiles",
-      });
+      folder: "churchDocument/profiles",
+      resource_type: "auto",
+    });
   } catch (error) {
     console.error("Cloudinary upload error:", error);
     logger.error("Error uploading to Cloudinary:", error);

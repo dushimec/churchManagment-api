@@ -22,6 +22,15 @@ router.get(
     SermonMediaController.getAllMedia
 );
 
+router.put(
+    "/:id",
+    verifyAccess,
+    restrictTo(Role.ADMIN, Role.PASTOR),
+    mediaValidator,
+    validate,
+    SermonMediaController.updateMedia
+);
+
 router.delete(
     "/:id",
     verifyAccess,

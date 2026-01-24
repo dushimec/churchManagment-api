@@ -97,4 +97,18 @@ export class FormController {
         const { data, total } = await RequestService.getAllChildDedicationRequests(Number(page), Number(limit));
         res.status(200).json({ success: true, data, pagination: { page: Number(page), limit: Number(limit), total, pages: Math.ceil(total / Number(limit)) } });
     });
+
+    // Dynamic Confirm/Reject
+    static confirmForm = catchAsync(async (req: Request, res: Response) => {
+        const { formType, id } = req.params;
+        const result = await RequestService.confirmForm(formType, id);
+        res.status(200).json({ success: true, data: result, message: "Form confirmed successfully" });
+    });
+
+    static rejectForm = catchAsync(async (req: Request, res: Response) => {
+        const { formType, id } = req.params;
+        const { reason } = req.body;
+        const result = await RequestService.rejectForm(formType, id, reason);
+        res.status(200).json({ success: true, data: result, message: "Form rejected successfully" });
+    });
 }

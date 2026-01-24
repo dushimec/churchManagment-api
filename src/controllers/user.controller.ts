@@ -7,6 +7,7 @@ import { uploadToCloudinary } from "../utils/cloudinary";
 import { generateAvatar } from "../utils/generateAvatar";
 import { SmsService } from "../services/sms.service";
 import { sendVerificationEmail } from "../config/email";
+import bcrypt from "bcryptjs";
 
 export class UserController {
 
@@ -45,6 +46,71 @@ export class UserController {
     res.status(200).json({
       success: true,
       user,
+    });
+  });
+
+  static createUser = catchAsync(async (req: Request, res: Response, next) => {
+    if (req.user!.role !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied",
+      });
+    }
+
+    const { firstName, lastName, email, phone, password, role } = req.body;
+
+    if (!firstName || !lastName || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide all required fields (firstName, lastName, email, password).",
+      });
+    }
+
+    const existingUser = await UserService.getUserByUnique({ email });
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "Email already in use.",
+      });
+    }
+
+    if (phone) {
+      const existingPhone = await UserService.getUserByUnique({ phone });
+      if (existingPhone) {
+        return res.status(409).json({
+          success: false,
+          message: "Phone number already in use.",
+        });
+      }
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const avatarSvg = await generateAvatar(`${firstName} ${lastName}`);
+    const profileImageUrl = await uploadToCloudinary(avatarSvg, true);
+
+    const user = await UserService.createUser({
+      firstName,
+      lastName,
+      email,
+      phone,
+      password: hashedPassword,
+      role: role || Role.MEMBER,
+      status: "ACTIVE", // Admin created users are active by default
+      isEmailVerified: true, // Admin created users are verified
+      profileImage: {
+        create: {
+          url: profileImageUrl.secure_url,
+          publicId: profileImageUrl.public_id,
+          type: "IMAGE",
+          category: "PROFILE_IMAGE"
+        }
+      }
+    });
+
+    res.status(201).json({
+      success: true,
+      user,
+      message: "User created successfully."
     });
   });
 
@@ -267,9 +333,9 @@ export class UserController {
     });
   });
 
- 
+
   static softDeleteUser = catchAsync(async (req: Request, res: Response, next) => {
-    
+
     if (req.user!.id !== req.params.id && req.user!.role !== "ADMIN") {
       return res.status(403).json({
         success: false,

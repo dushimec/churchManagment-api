@@ -4,8 +4,9 @@ export const youthFormValidator = [
     body("name").isString().notEmpty().withMessage("Name is required"),
     body("idNumber").isString().notEmpty().withMessage("ID Number is required"),
     body("phone").isString().notEmpty().withMessage("Phone is required"),
+    body("email").isEmail().withMessage("Valid email is required"),
     body("district").isString().notEmpty().withMessage("District is required"),
-    body("cell").isString().notEmpty().withMessage("Cell is required"),
+    body("sector").isString().notEmpty().withMessage("Sector is required"),
     body("churchCell").isString().notEmpty().withMessage("Church Cell is required"),
     body("youthFamily").isString().notEmpty().withMessage("Youth Family is required"),
 ];
@@ -16,7 +17,7 @@ export const cellRecommendationValidator = [
     body("phone").isString().notEmpty().withMessage("Phone is required"),
     body("email").isEmail().withMessage("Valid email is required"),
     body("district").isString().notEmpty().withMessage("District is required"),
-    body("cell").isString().notEmpty().withMessage("Cell is required"),
+    body("sector").isString().notEmpty().withMessage("Sector is required"),
     body("churchCellName").isString().notEmpty().withMessage("Church Cell Name is required"),
 ];
 
@@ -27,7 +28,7 @@ export const churchRecommendationValidator = [
     body("email").optional().isEmail().withMessage("Valid email required"),
     body("phone").optional().isString(),
     body("district").isString().notEmpty().withMessage("District is required"),
-    body("cell").isString().notEmpty().withMessage("Cell is required"),
+    body("sector").isString().notEmpty().withMessage("Sector is required"),
     body("cellRecommendation").isString().notEmpty().withMessage("Cell recommendation is required"),
     body("youthRecommendation").optional().isString(),
     body("passportPhoto").optional().isString(),
@@ -49,9 +50,6 @@ export const marriageCertificateValidator = [
     body("groomPhone").isString().notEmpty().withMessage("Groom phone is required"),
     body("brideAddress").isString().notEmpty().withMessage("Bride address is required"),
     body("groomAddress").isString().notEmpty().withMessage("Groom address is required"),
-    body("marenName").isString().notEmpty().withMessage("Parent name (Mother) is required"),
-    body("parenName").isString().notEmpty().withMessage("Parent name (Father) is required"),
-    body("parentAddress").isString().notEmpty().withMessage("Parent address is required"),
 ];
 
 

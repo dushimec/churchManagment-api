@@ -44,4 +44,8 @@ router.get("/wedding-request", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR)
 router.post("/child-dedication", validator.childDedicationRequestValidator, FormController.createChildDedicationRequest);
 router.get("/child-dedication", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR), FormController.getAllChildDedicationRequests);
 
+// Dynamic Confirm/Reject for all forms
+router.patch("/:formType/:id/confirm", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR), FormController.confirmForm);
+router.patch("/:formType/:id/reject", verifyAccess, restrictTo(Role.ADMIN, Role.PASTOR), FormController.rejectForm);
+
 export default router;

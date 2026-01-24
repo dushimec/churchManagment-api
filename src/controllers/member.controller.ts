@@ -37,7 +37,7 @@ export class MemberController {
         confirmationDate: this.parseDate(data.confirmationDate, isEN),
         dateJoined: new Date(),
         ministryPreferences: data.ministryPreferences || [],
-        names: ""
+        names: data.names
       };
 
       const cleanedData = removeUndefined(memberData);

@@ -8,7 +8,7 @@ import { languagePreference } from "../middlewares/languagePreference";
 const router = Router();
 router.use(verifyAccess, languagePreference);
 
-router.route("/").get(isAdmin, UserController.getUsers);
+router.route("/").get(isAdmin, UserController.getUsers).post(isAdmin, UserController.createUser);
 
 router
   .route("/:id")

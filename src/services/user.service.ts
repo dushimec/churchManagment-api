@@ -22,6 +22,12 @@ export class UserService {
     });
   }
 
+  public static async createUser(data: Prisma.UserCreateInput) {
+    return await prisma.user.create({
+      data,
+    });
+  }
+
   public static async getAllUsers(
     page: number = 1,
     limit: number = 10,
@@ -65,7 +71,7 @@ export class UserService {
         { email: { contains: query, mode: "insensitive" } },
         { phone: { contains: query, mode: "insensitive" } },
       ],
-      isDeleted: false, 
+      isDeleted: false,
     };
 
     const [users, total] = await prisma.$transaction([
