@@ -12,6 +12,8 @@ import certificationRoute from "./certification.route";
 import communicationRoute from "./communication.route";
 import communityRoute from "./community.route";
 import overviewRoute from "./overview.route";
+import websiteRoute from "./website.route";
+import contactRoute from "./contact.route";
 import { requestLogger } from "../middlewares/requestLogger";
 
 const router = Router();
@@ -35,5 +37,7 @@ router.use("/certifications", certificationRoute);
 router.use("/communication", communicationRoute);
 router.use("/community", communityRoute);
 router.use("/overview", overviewRoute);
+router.use("/website", websiteRoute);
+router.use("/contact", contactRoute);
 
 export default router;

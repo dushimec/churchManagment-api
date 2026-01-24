@@ -28,7 +28,8 @@ export class OverviewService {
 
         const [
             youthApproved, cellApproved, churchApproved, baptismCertApproved, marriageCertApproved, weddingApproved, childDedicationApproved, marriageRequestApproved, baptismRequestApproved,
-            youthRejected, cellRejected, churchRejected, baptismCertRejected, marriageCertRejected, weddingRejected, childDedicationRejected, marriageRequestRejected, baptismRequestRejected
+            youthRejected, cellRejected, churchRejected, baptismCertRejected, marriageCertRejected, weddingRejected, childDedicationRejected, marriageRequestRejected, baptismRequestRejected,
+            unreadMessages
         ] = await Promise.all([
             prisma.youthForm.count({ where: { status: "APPROVED" } }),
             prisma.cellRecommendation.count({ where: { status: "APPROVED" } }),
@@ -49,6 +50,7 @@ export class OverviewService {
             prisma.childDedicationRequest.count({ where: { status: "REJECTED" } }),
             prisma.marriageRequest.count({ where: { status: "REJECTED" } }),
             prisma.baptismRequest.count({ where: { status: "REJECTED" } }),
+            prisma.contactMessage.count({ where: { read: false } }),
         ]);
 
         const totalRequests = youthCount + cellCount + churchCount + baptismCertCount + marriageCertCount + weddingCount + childDedicationCount + marriageRequestCount + baptismRequestCount;
@@ -59,7 +61,8 @@ export class OverviewService {
             totalRequests,
             totalApproved,
             totalRejected,
-            totalMedia: mediaCount
+            totalMedia: mediaCount,
+            unreadMessages
         };
     }
 }

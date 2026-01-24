@@ -483,6 +483,63 @@ model LoginActivity {
   @@map("login_activities")
 }
 
+model AboutSection {
+  id        String           @id @default(cuid())
+  title     String
+  content   String
+  type      AboutSectionType @unique
+  updatedAt DateTime         @updatedAt
+
+  @@map("about_sections")
+}
+
+model Leadership {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  imageUrl  String?
+  sequence  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("leadership")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  firstName String
+  lastName  String
+  phone     String
+  location  String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
+}
+
+model ContactInfo {
+  id              String   @id @default(cuid())
+  helpTitle       String?  @default("How can we help?")
+  helpDescription String?
+  description     String
+  address         String?
+  phone           String?
+  email           String?
+  logoUrl         String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("contact_info")
+}
+
+enum AboutSectionType {
+  WHO_WE_ARE
+  MISSION
+  VISION
+  HISTORY
+  START_UP
+}
+
 enum Role {
   MEMBER
   PASTOR
