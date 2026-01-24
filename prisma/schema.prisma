@@ -497,6 +497,8 @@ model Leadership {
   id        String   @id @default(cuid())
   name      String
   role      String
+  email     String?
+  phone     String?
   imageUrl  String?
   sequence  Int      @default(0)
   createdAt DateTime @default(now())

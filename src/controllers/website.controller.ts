@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { catchAsync } from "../utils/CatchAsync";
 import { WebsiteService } from "../services/website.service";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 export class WebsiteController {
     static getAboutSections = catchAsync(async (req: Request, res: Response) => {
@@ -20,13 +21,25 @@ export class WebsiteController {
     });
 
     static addLeadership = catchAsync(async (req: Request, res: Response) => {
-        const member = await WebsiteService.addLeadership(req.body);
+        const data = { ...req.body };
+        if (data.file) {
+            const uploadResult = await uploadToCloudinary(data.file, false);
+            data.imageUrl = uploadResult.secure_url;
+            delete data.file;
+        }
+        const member = await WebsiteService.addLeadership(data);
         res.status(201).json({ success: true, data: member });
     });
 
     static updateLeadership = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;
-        const member = await WebsiteService.updateLeadership(id, req.body);
+        const data = { ...req.body };
+        if (data.file) {
+            const uploadResult = await uploadToCloudinary(data.file, false);
+            data.imageUrl = uploadResult.secure_url;
+            delete data.file;
+        }
+        const member = await WebsiteService.updateLeadership(id, data);
         res.status(200).json({ success: true, data: member });
     });
 
