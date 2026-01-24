@@ -3,21 +3,32 @@ import { catchAsync } from "../utils/CatchAsync";
 import { matchedData } from "express-validator";
 import { CommunityService } from "../services/community.service";
 import { EventType } from "@prisma/client";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 export class CommunityController {
     // Events
     static createEvent = catchAsync(async (req: Request, res: Response) => {
         const data = matchedData(req) as any;
+
+        // Handle Image Upload
+        const { imageUrl } = req.body;
+        if (imageUrl && imageUrl.startsWith("data:image")) {
+            const uploadResult = await uploadToCloudinary(imageUrl);
+            data.imageUrl = uploadResult.secure_url;
+        }
+
         const result = await CommunityService.createEvent({
             title: data.title,
             description: data.description,
             eventType: data.eventType,
             location: data.location,
             date: new Date(data.date),
+            imageUrl: data.imageUrl,
             organizer: { connect: { id: req.user!.id } },
         } as any);
         res.status(201).json({ success: true, data: result });
     });
+
 
     static getAllEvents = catchAsync(async (req: Request, res: Response) => {
         const { page = 1, limit = 10, type } = req.query;
@@ -53,9 +64,18 @@ export class CommunityController {
         const { id } = req.params;
         const data = matchedData(req);
         if (data.date) data.date = new Date(data.date);
+
+        // Handle Image Upload
+        const { imageUrl } = req.body;
+        if (imageUrl && imageUrl.startsWith("data:image")) {
+            const uploadResult = await uploadToCloudinary(imageUrl);
+            data.imageUrl = uploadResult.secure_url;
+        }
+
         const result = await CommunityService.updateEvent(id, data);
         res.status(200).json({ success: true, data: result });
     });
+
 
     static deleteEvent = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;

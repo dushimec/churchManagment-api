@@ -4,23 +4,28 @@ import { prisma } from "../config/database";
 export class UserService {
   public static async getUser(
     where: Prisma.UserWhereInput,
-    include?: Prisma.UserInclude
+    options?: { select?: Prisma.UserSelect; include?: Prisma.UserInclude }
   ) {
     return await prisma.user.findFirst({
       where,
-      include,
+      ...options,
     });
   }
 
+
+
   public static async getUserByUnique(
     where: Prisma.UserWhereUniqueInput,
-    include?: Prisma.UserInclude
+    options?: { select?: Prisma.UserSelect; include?: Prisma.UserInclude }
   ) {
     return await prisma.user.findUnique({
       where,
-      include,
+      ...options,
     });
   }
+
+
+
 
   public static async createUser(data: Prisma.UserCreateInput) {
     return await prisma.user.create({
@@ -32,16 +37,17 @@ export class UserService {
     page: number = 1,
     limit: number = 10,
     where?: Prisma.UserWhereInput,
-    select?: Prisma.UserSelect,
+    options?: { select?: Prisma.UserSelect; include?: Prisma.UserInclude },
     orderBy?: Prisma.UserOrderByWithRelationInput | Prisma.UserOrderByWithRelationInput[]
   ) {
     const users = await prisma.user.findMany({
       where,
       skip: (page - 1) * limit,
       take: limit,
-      select,
+      ...options,
       orderBy,
     });
+
 
     const total = await prisma.user.count({ where });
     return { users, total };
@@ -50,14 +56,15 @@ export class UserService {
   public static async updateUser(
     id: string,
     data: Prisma.UserUpdateInput,
-    select?: Prisma.UserSelect
+    options?: { select?: Prisma.UserSelect; include?: Prisma.UserInclude }
   ) {
     return await prisma.user.update({
       where: { id },
       data,
-      select,
+      ...options,
     });
   }
+
 
   public static async searchUsers(
     query: string,

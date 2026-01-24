@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { catchAsync } from "../utils/CatchAsync";
 import { matchedData } from "express-validator";
 import { ServiceService } from "../services/service.service";
+import { uploadToCloudinary } from "../utils/cloudinary";
 
 export class ServiceController {
     // --- Service Management ---
@@ -14,6 +15,13 @@ export class ServiceController {
         if (data.startTime) data.startTime = new Date(data.startTime);
         if (data.endTime) data.endTime = new Date(data.endTime);
 
+        // Handle Image Upload
+        const { imageUrl } = req.body;
+        if (imageUrl && imageUrl.startsWith("data:image")) {
+            const uploadResult = await uploadToCloudinary(imageUrl);
+            data.imageUrl = uploadResult.secure_url;
+        }
+
         const service = await ServiceService.createService(data as any);
 
         res.status(201).json({
@@ -21,6 +29,7 @@ export class ServiceController {
             data: service,
         });
     });
+
 
     static getAllServices = catchAsync(async (req: Request, res: Response) => {
         const { page = 1, limit = 10, type } = req.query;
@@ -74,10 +83,18 @@ export class ServiceController {
         if (data.startTime) data.startTime = new Date(data.startTime);
         if (data.endTime) data.endTime = new Date(data.endTime);
 
+        // Handle Image Upload
+        const { imageUrl } = req.body;
+        if (imageUrl && imageUrl.startsWith("data:image")) {
+            const uploadResult = await uploadToCloudinary(imageUrl);
+            data.imageUrl = uploadResult.secure_url;
+        }
+
         const service = await ServiceService.updateService(id, data as any);
 
         res.status(200).json({ success: true, data: service });
     });
+
 
     static deleteService = catchAsync(async (req: Request, res: Response) => {
         const { id } = req.params;

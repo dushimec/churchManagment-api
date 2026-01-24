@@ -13,7 +13,9 @@ export const serviceValidator = [
     body("choirLeaderId").optional().isString(),
     body("startTime").isISO8601().withMessage("Valid start time is required"),
     body("endTime").isISO8601().withMessage("Valid end time is required"),
+    body("imageUrl").optional().isString(),
 ];
+
 
 export const attendanceValidator = [
     body("serviceId").isString().notEmpty().withMessage("Service ID is required"),

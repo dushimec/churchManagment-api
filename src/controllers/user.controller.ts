@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 import { catchAsync } from "../utils/CatchAsync";
-import { Role, Language } from "@prisma/client";
-import { profileSelects } from "../types";
+import { Role, Language, Prisma } from "@prisma/client";
+import { profileIncludes } from "../types";
+
 import { UserService } from "../services/user.service";
 import { uploadToCloudinary } from "../utils/cloudinary";
 import { generateAvatar } from "../utils/generateAvatar";
@@ -14,8 +15,10 @@ export class UserController {
   static getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserService.getUserByUnique(
       { id: req.user!.id },
-      profileSelects
+      { include: profileIncludes }
     );
+
+
 
     if (!user) {
       return res.status(404).json({
@@ -26,15 +29,18 @@ export class UserController {
 
     res.status(200).json({
       success: true,
-      user,
+      data: user,
     });
+
   });
 
   static getUser = catchAsync(async (req: Request, res: Response, next) => {
     const user = await UserService.getUserByUnique(
       { id: req.params.id },
-      profileSelects
+      { include: profileIncludes }
     );
+
+
 
     if (!user || user.isDeleted) {
       return res.status(404).json({
@@ -45,8 +51,9 @@ export class UserController {
 
     res.status(200).json({
       success: true,
-      user,
+      data: user,
     });
+
   });
 
   static createUser = catchAsync(async (req: Request, res: Response, next) => {
@@ -152,9 +159,10 @@ export class UserController {
       page,
       pageSize,
       where,
-      profileSelects,
+      { include: profileIncludes },
       orderBy
     );
+
 
     res.status(200).json({
       success: true,
@@ -217,12 +225,15 @@ export class UserController {
       }
     }
 
-    const user = await UserService.updateUser(req.params.id, updates, profileSelects);
+    const user = await UserService.updateUser(req.params.id, updates, { include: profileIncludes });
+
+
 
     res.status(200).json({
       success: true,
-      user,
+      data: user,
     });
+
   });
 
   static uploadAvatar = catchAsync(async (req: Request, res: Response, next) => {

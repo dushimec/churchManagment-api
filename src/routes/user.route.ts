@@ -10,6 +10,9 @@ router.use(verifyAccess, languagePreference);
 
 router.route("/").get(isAdmin, UserController.getUsers).post(isAdmin, UserController.createUser);
 
+router.get("/me", UserController.getMe);
+
+
 router
   .route("/:id")
   .get(isAccountOwnerOrAdmin, UserController.getUser)

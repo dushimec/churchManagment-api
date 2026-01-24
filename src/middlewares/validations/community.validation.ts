@@ -26,4 +26,6 @@ export const eventValidator = [
         .isString()
         .notEmpty()
         .withMessage("Location is required"),
+    body("imageUrl").optional().isString(),
 ];
+

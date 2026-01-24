@@ -6,8 +6,9 @@ export const requestLogger = (
   res: Response,
   next: NextFunction
 ) => {
-  logger.info(
-    `⚡️[${req.method}] request incoming to endpoint ${req.originalUrl}`
-  );
+  // logger.info(
+  //   `⚡️[${req.method}] request incoming to endpoint ${req.originalUrl}`
+  // );
+
   next();
 };
