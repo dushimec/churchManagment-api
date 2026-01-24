@@ -6,12 +6,14 @@ export const prayerRequestValidator = [
         .isString()
         .notEmpty()
         .withMessage("Prayer request content is required")
-        .isLength({ min: 10 })
-        .withMessage("Prayer request must be at least 10 characters long"),
+        .isLength({ min: 5 })
+        .withMessage("Prayer request must be at least 5 characters long"),
     body("isPrivate")
         .optional()
         .isBoolean()
         .withMessage("isPrivate must be a boolean"),
+    body("requesterName").optional().isString(),
+    body("requesterEmail").optional().isEmail(),
 ];
 
 export const prayerResponseValidator = [
@@ -25,25 +27,30 @@ export const prayerResponseValidator = [
 
 export const counselingAppointmentValidator = [
     body("pastorId")
-        .isString()
-        .notEmpty()
-        .withMessage("Pastor ID is required"),
+        .optional()
+        .isString(),
     body("date")
+        .optional() // We might get it from preferredDate
         .isISO8601()
-        .withMessage("Valid date is required")
-        .custom((value) => {
-            if (new Date(value) < new Date()) {
-                throw new Error("Appointment date must be in the future");
-            }
-            return true;
-        }),
+        .withMessage("Valid date is required"),
+    body("preferredDate")
+        .optional()
+        .isISO8601()
+        .withMessage("Valid preferred date is required"),
     body("duration")
+        .optional()
         .isInt({ min: 15, max: 120 })
         .withMessage("Duration must be between 15 and 120 minutes"),
     body("purpose")
-        .isString()
-        .notEmpty()
-        .withMessage("Purpose of appointment is required"),
+        .optional()
+        .isString(),
+    body("reason")
+        .optional()
+        .isString(),
+    body("requesterName").optional().isString(),
+    body("requesterEmail").optional().isEmail(),
+    body("requesterPhone").optional().isString(),
+    body("preferredTime").optional().isString(),
 ];
 
 export const counselingStatusValidator = [
