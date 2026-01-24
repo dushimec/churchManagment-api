@@ -613,15 +613,23 @@ export const sendFormStatusEmail = async (
   email: string,
   name: string,
   formType: string,
-  status: "APPROVED" | "REJECTED",
+  status: "APPROVED" | "REJECTED" | "COMPLETED",
   language: Language = Language.EN,
   reason?: string
 ): Promise<boolean> => {
   const isApproved = status === "APPROVED";
-  const subject =
-    language === Language.FR
+  const isCompleted = status === "COMPLETED";
+
+  let subject = "";
+  if (isCompleted) {
+    subject = language === Language.FR
+      ? `Votre ${formType} est terminé(e)`
+      : `Your ${formType} is completed`;
+  } else {
+    subject = language === Language.FR
       ? `Mise à jour de votre demande - ${formType} - ${isApproved ? "Approuvée" : "Rejetée"}`
       : `Update on your request - ${formType} - ${isApproved ? "Approved" : "Rejected"}`;
+  }
 
   const content =
     language === Language.FR
@@ -629,9 +637,9 @@ export const sendFormStatusEmail = async (
       <h2>Mise à jour du statut de votre demande</h2>
       
       <p>Cher(e) ${name},</p>
-      <p>Votre demande de <strong>${formType}</strong> a été <strong>${isApproved ? "approuvée ✅" : "rejetée ❌"}</strong>.</p>
+      <p>Votre demande de <strong>${formType}</strong> a été <strong>${isCompleted ? "terminée/effectuée ✅" : (isApproved ? "approuvée ✅" : "rejetée ❌")}</strong>.</p>
       
-      ${!isApproved && reason ? `<blockquote>Raison : ${reason}</blockquote>` : ""}
+      ${!isApproved && !isCompleted && reason ? `<blockquote>Raison : ${reason}</blockquote>` : ""}
       
       <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
       
@@ -641,13 +649,58 @@ export const sendFormStatusEmail = async (
       <h2>Request Status Update</h2>
       
       <p>Dear ${name},</p>
-      <p>Your request for <strong>${formType}</strong> has been <strong>${isApproved ? "approved ✅" : "rejected ❌"}</strong>.</p>
+      <p>Your request for <strong>${formType}</strong> has been <strong>${isCompleted ? "completed ✅" : (isApproved ? "approved ✅" : "rejected ❌")}</strong>.</p>
       
-      ${!isApproved && reason ? `<blockquote>Reason: ${reason}</blockquote>` : ""}
+      ${!isApproved && !isCompleted && reason ? `<blockquote>Reason: ${reason}</blockquote>` : ""}
       
       <p>If you have any questions, please feel free to contact us.</p>
       
       <p>Best regards,<br>The Evangelical Restoration Church Team</p>
+    `;
+
+  return await sendEmail(email, subject, baseEmailTemplate(content, language));
+};
+
+export const sendPrayerResponseEmail = async (
+  email: string,
+  name: string,
+  response: string,
+  language: Language = Language.EN
+): Promise<boolean> => {
+  const subject =
+    language === Language.FR
+      ? "Réponse à votre demande de prière"
+      : "Response to Your Prayer Request";
+
+  const content =
+    language === Language.FR
+      ? `
+      <h2>Réponse à votre demande de prière</h2>
+      
+      <p>Cher(e) ${name},</p>
+      <p>Un de nos pasteurs a répondu à votre demande de prière :</p>
+      
+      <blockquote>
+        ${response}
+      </blockquote>
+      
+      <p>Nous continuons de prier pour vous.</p>
+      
+      <p>En Christ,<br>L'équipe pastorale</p>
+    `
+      : `
+      <h2>Response to Your Prayer Request</h2>
+      
+      <p>Dear ${name},</p>
+      <p>One of our pastors has responded to your prayer request:</p>
+      
+      <blockquote>
+        ${response}
+      </blockquote>
+      
+      <p>We continue to pray for you.</p>
+      
+      <p>In Christ,<br>The Pastoral Team</p>
     `;
 
   return await sendEmail(email, subject, baseEmailTemplate(content, language));

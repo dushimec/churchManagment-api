@@ -51,6 +51,21 @@ export class PastoralController {
         const { id } = req.params;
         const { response } = matchedData(req);
         const result = await PastoralService.respondToPrayerRequest(id, req.user!.id, response);
+
+        // Fetch the updated request to get member details
+        const prayerRequest = await PastoralService.getPrayerRequestById(id);
+
+        if (prayerRequest && prayerRequest.member && prayerRequest.member.email) {
+            await import("../config/email").then(({ sendPrayerResponseEmail }) =>
+                sendPrayerResponseEmail(
+                    prayerRequest.member.email,
+                    prayerRequest.member.firstName || 'Member',
+                    response,
+                    prayerRequest.member.language
+                )
+            );
+        }
+
         res.status(200).json({ success: true, data: result });
     });
 
@@ -96,6 +111,23 @@ export class PastoralController {
         const { id } = req.params;
         const { status, notes } = matchedData(req);
         const result = await PastoralService.updateCounselingStatus(id, status, notes);
+
+        // Fetch appointment details for email
+        const appointment = await PastoralService.getCounselingAppointmentById(id);
+
+        if (appointment && appointment.member && appointment.member.email) {
+            await import("../config/email").then(({ sendFormStatusEmail }) =>
+                sendFormStatusEmail(
+                    appointment.member.email,
+                    appointment.member.firstName || 'Member',
+                    'Counseling Appointment', // formType
+                    status,
+                    appointment.member.language,
+                    notes
+                )
+            );
+        }
+
         res.status(200).json({ success: true, data: result });
     });
 }

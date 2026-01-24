@@ -32,7 +32,7 @@ export class PastoralService {
         return await prisma.prayerRequest.findUnique({
             where: { id },
             include: {
-                member: { select: { firstName: true, lastName: true } },
+                member: { select: { firstName: true, lastName: true, email: true, language: true } },
                 pastor: { select: { firstName: true, lastName: true } },
             },
         });
@@ -55,6 +55,16 @@ export class PastoralService {
         return await prisma.counselingAppointment.create({ data });
     }
 
+    public static async getCounselingAppointmentById(id: string) {
+        return await prisma.counselingAppointment.findUnique({
+            where: { id },
+            include: {
+                member: { select: { firstName: true, lastName: true, email: true, language: true } },
+                pastor: { select: { firstName: true, lastName: true } },
+            },
+        });
+    }
+
     public static async getAllCounselingAppointments(
         page: number = 1,
         limit: number = 10,
@@ -67,7 +77,7 @@ export class PastoralService {
                 take: limit,
                 orderBy: { date: "desc" },
                 include: {
-                    member: { select: { firstName: true, lastName: true } },
+                    member: { select: { firstName: true, lastName: true, email: true } },
                     pastor: { select: { firstName: true, lastName: true } },
                 },
             }),
